@@ -15,7 +15,16 @@ url = "https://api.apr.dev"
 
 [provider]
 cluster = "localnet"
-wallet = "~/.config/solana/id.json"
+wallet = "./tests/keypairs/default_wallet.json"
+wallet_pub = "AeXDXCDe57eZq4ZLtB3RA9Cb5KRYPxYrFnQooay88Vc7"
 
 [scripts]
 test = "npx mocha -t 1000000 tests/"
+
+[path]
+idl_path = "./target/idl/coral_multisig.json"
+binary_path = "./target/verifiable/coral_multisig.so"
+key_path = "./target/deploy/coral_multisig-keypair.json"
+
+[validator]
+ledger_dir = "./.anchor/test-ledger"
