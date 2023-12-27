@@ -17,7 +17,7 @@ describe("Test multisig", async () => {
   let validatorProcess: ChildProcess;
   let dsl: MultisigDsl;
   before(async () => {
-    let result = await setUpValidator();
+    let result = await setUpValidator(false);
     program = result.program;
     provider = result.provider;
     validatorProcess = result.validatorProcess;

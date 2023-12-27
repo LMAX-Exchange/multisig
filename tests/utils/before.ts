@@ -30,7 +30,7 @@ export interface AnchorConfig {
 
 const PATH_TO_ANCHOR_CONFIG: string = "./Anchor.toml";
 
-export const setUpValidator = async (): Promise<{
+export const setUpValidator = async (deployIdl : Boolean): Promise<{
   provider: AnchorProvider;
   program: Program;
   validatorProcess: ChildProcess;
@@ -78,14 +78,15 @@ export const setUpValidator = async (): Promise<{
     provider
   );
 
-  console.log(`anchor idl init -f ${config.path.idl_path} ${programAddress.toBase58()}  --provider.cluster ${
-      connection.rpcEndpoint
-  }`)
-  shell.exec(
-      `anchor idl init -f ${config.path.idl_path} ${programAddress.toBase58()}  --provider.cluster ${
-          connection.rpcEndpoint
-      }`
-  );
+  if(deployIdl)
+  {
+    console.log("Deploying IDL")
+    shell.exec(
+        `anchor idl init -f ${config.path.idl_path} ${programAddress.toBase58()}  --provider.cluster ${
+            connection.rpcEndpoint
+        }`
+    );
+  }
 
   return { provider, program, validatorProcess };
 };
