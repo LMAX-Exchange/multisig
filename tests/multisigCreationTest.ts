@@ -1,14 +1,11 @@
 import assert = require("assert");
 import { setUpValidator } from "./utils/before";
 import { AnchorProvider, BN, Program } from "@coral-xyz/anchor";
-import {
-  Keypair,
-} from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
 import { MultisigAccount, MultisigDsl } from "./utils/multisigDsl";
 import { describe } from "mocha";
 import { ChildProcess } from "node:child_process";
-import {fail} from "node:assert";
-import {cat} from "shelljs";
+import { fail } from "node:assert";
 
 describe("Test creation of multisig account", async () => {
   let provider: AnchorProvider;
@@ -45,8 +42,7 @@ describe("Test creation of multisig account", async () => {
     assert.ok(actualMultisig.ownerSetSeqno === 0);
   });
 
-  it("should fail to create if provided threshold is greater than number of owners", async () =>
-  {
+  it("should fail to create if provided threshold is greater than number of owners", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -54,23 +50,19 @@ describe("Test creation of multisig account", async () => {
     const multisigSize = 200; // Big enough.
     const threshold = new BN(4);
 
-    try
-    {
-      await dsl.createMultisig(
-          owners,
-          multisigSize,
-          threshold
+    try {
+      await dsl.createMultisig(owners, multisigSize, threshold);
+      fail("Multisig should not have been created");
+    } catch (e: any) {
+      assert.ok(
+        e.message.includes(
+          "Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners"
+        )
       );
-      fail('Multisig should not have been created');
-    }
-    catch (e : any)
-    {
-      assert.ok(e.message.includes('Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners'))
     }
   });
 
-  it('should not create multisig with 0 threshold', async () =>
-  {
+  it("should not create multisig with 0 threshold", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -78,41 +70,32 @@ describe("Test creation of multisig account", async () => {
     const multisigSize = 200; // Big enough.
     const threshold = new BN(0);
 
-    try
-    {
-      await dsl.createMultisig(
-          owners,
-          multisigSize,
-          threshold
+    try {
+      await dsl.createMultisig(owners, multisigSize, threshold);
+      fail("Multisig should not have been created");
+    } catch (e: any) {
+      assert.ok(
+        e.message.includes(
+          "Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners"
+        )
       );
-      fail('Multisig should not have been created');
-    }
-    catch (e : any)
-    {
-      assert.ok(e.message.includes('Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners'))
     }
   });
 
-  it('should not create multisig with 0 threshold and no owners', async () =>
-  {
+  it("should not create multisig with 0 threshold and no owners", async () => {
     const owners = [];
     const multisigSize = 200; // Big enough.
     const threshold = new BN(0);
 
-    try
-    {
-      await dsl.createMultisig(
-          owners,
-          multisigSize,
-          threshold
+    try {
+      await dsl.createMultisig(owners, multisigSize, threshold);
+      fail("Multisig should not have been created");
+    } catch (e: any) {
+      assert.ok(
+        e.message.includes(
+          "Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners"
+        )
       );
-      fail('Multisig should not have been created');
-    }
-    catch (e : any)
-    {
-      assert.ok(e.message.includes('Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners'))
     }
   });
-
-
 });

@@ -6,7 +6,7 @@ import * as os from "os";
 import { Keypair, PublicKey, Connection } from "@solana/web3.js";
 import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
 import path = require("node:path");
-import shell from 'shelljs';
+import shell from "shelljs";
 
 export interface AnchorConfig {
   path: {
@@ -30,7 +30,9 @@ export interface AnchorConfig {
 
 const PATH_TO_ANCHOR_CONFIG: string = "./Anchor.toml";
 
-export const setUpValidator = async (deployIdl : Boolean): Promise<{
+export const setUpValidator = async (
+  deployIdl: Boolean
+): Promise<{
   provider: AnchorProvider;
   program: Program;
   validatorProcess: ChildProcess;
@@ -78,13 +80,14 @@ export const setUpValidator = async (deployIdl : Boolean): Promise<{
     provider
   );
 
-  if(deployIdl)
-  {
-    console.log("Deploying IDL")
+  if (deployIdl) {
+    console.log("Deploying IDL");
     shell.exec(
-        `anchor idl init -f ${config.path.idl_path} ${programAddress.toBase58()}  --provider.cluster ${
-            connection.rpcEndpoint
-        }`
+      `anchor idl init -f ${
+        config.path.idl_path
+      } ${programAddress.toBase58()}  --provider.cluster ${
+        connection.rpcEndpoint
+      }`
     );
   }
 
