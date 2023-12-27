@@ -3,7 +3,8 @@
   "scripts": {
     "lint": "npx prettier --check tests/",
     "lint:fix": "npx prettier --write tests/",
-    "test": "anchor build --verifiable && npx anchor test"
+    "test": "npm install && npx anchor test",
+    "build": "anchor build --verifiable"
   },
   "devDependencies": {
     "@coral-xyz/anchor": "^0.29.0",

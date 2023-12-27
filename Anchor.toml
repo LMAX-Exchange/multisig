@@ -19,7 +19,7 @@ wallet = "./tests/keypairs/default_wallet.json"
 wallet_pub = "AeXDXCDe57eZq4ZLtB3RA9Cb5KRYPxYrFnQooay88Vc7"
 
 [scripts]
-test = "npx mocha -t 1000000 tests/"
+test = "npx mocha --require ts-node/register -t 1000000 --exit tests/*Test.ts"
 
 [path]
 idl_path = "./target/idl/coral_multisig.json"
