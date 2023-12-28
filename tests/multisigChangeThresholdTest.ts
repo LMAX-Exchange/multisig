@@ -305,6 +305,71 @@ describe("Test changing multisig threshold", async () => {
     );
   });
 
+  it("should not allow threshold greater than number of owners", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const multisigSize = 200; // Big enough.
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      multisigSize,
+      threshold
+    );
+
+    // Create instruction to change multisig threshold
+    let newThreshold = new BN(4);
+    let transactionInstruction = await program.methods
+      .changeThreshold(newThreshold)
+      .accounts({
+        multisig: multisig.address,
+        multisigSigner: multisig.signer,
+      })
+      .instruction();
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(
+      ownerA,
+      transactionInstruction,
+      multisig.address,
+      1000
+    );
+
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+    try {
+      await dsl.executeTransaction(
+        transactionAddress,
+        transactionInstruction,
+        multisig.signer,
+        multisig.address
+      );
+      fail("should have failed to execute transaction");
+    } catch (e) {
+      assert.ok(
+        e.message.includes(
+          "Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0"
+        )
+      );
+    }
+
+    let actualMultisig = await program.account.multisig.fetch(multisig.address);
+    assert.strictEqual(actualMultisig.nonce, multisig.nonce);
+    assert.ok(
+      threshold.eq(actualMultisig.threshold),
+      "Should not have updated threshold"
+    );
+    assert.deepStrictEqual(
+      actualMultisig.owners,
+      owners,
+      "Should not have updated owners"
+    );
+    assert.ok(
+      actualMultisig.ownerSetSeqno === 0,
+      "Should not have incremented owner set seq number"
+    );
+  });
+
   // Threshold is of type u64, BN(-1) will actually be interpreted as 1
   it("ignores negatives on updated threshold", async () => {
     const ownerA = Keypair.generate();

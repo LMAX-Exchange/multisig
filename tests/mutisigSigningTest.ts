@@ -12,7 +12,7 @@ import { describe } from "mocha";
 import { ChildProcess } from "node:child_process";
 import { fail } from "node:assert";
 
-describe("Test performing transaction signed by the multisig", async () => {
+describe("Test performing signing and execution", async () => {
   let provider: AnchorProvider;
   let program: Program;
   let validatorProcess: ChildProcess;
@@ -276,6 +276,75 @@ describe("Test performing transaction signed by the multisig", async () => {
       assert.ok(
         e.message.includes(
           "Error Code: NotEnoughSigners. Error Number: 6002. Error Message: Not enough owners signed this transaction"
+        )
+      );
+    }
+    let afterBalance = await provider.connection.getBalance(
+      multisig.signer,
+      "confirmed"
+    );
+    assert.strictEqual(afterBalance, 1_000_000_000);
+  });
+
+  it("should not allow non owner to sign", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const multisigSize = 200; // Big enough.
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      multisigSize,
+      threshold
+    );
+
+    // Fund the multisig signer account
+    await provider.sendAndConfirm(
+      new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: provider.publicKey,
+          lamports: new BN(1_000_000_000),
+          toPubkey: multisig.signer,
+        })
+      )
+    );
+
+    // Create instruction to send funds from multisig
+    let transactionInstruction = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(1_000_000_000),
+      toPubkey: provider.publicKey,
+    });
+
+    let beforeBalance = await provider.connection.getBalance(
+      multisig.signer,
+      "confirmed"
+    );
+    assert.strictEqual(beforeBalance, 1_000_000_000);
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(
+      ownerA,
+      transactionInstruction,
+      multisig.address,
+      1000
+    );
+
+    const notAnOwner = Keypair.generate();
+
+    try {
+      //Attempt to sign with not an owner
+      await dsl.approveTransaction(
+        notAnOwner,
+        multisig.address,
+        transactionAddress
+      );
+      fail("Should have failed to approve transaction");
+    } catch (e) {
+      assert.ok(
+        e.message.includes(
+          "Error Code: InvalidOwner. Error Number: 6000. Error Message: The given owner is not part of this multisig"
         )
       );
     }
