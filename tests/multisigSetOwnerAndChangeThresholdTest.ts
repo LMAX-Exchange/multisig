@@ -13,7 +13,7 @@ import { ChildProcess } from "node:child_process";
 import { fail } from "node:assert";
 import { cat } from "shelljs";
 
-describe("Test changing multisig threshold", async () => {
+describe("Test changing multisig owner and threshold atomically", async () => {
   let provider: AnchorProvider;
   let program: Program;
   let validatorProcess: ChildProcess;
@@ -26,7 +26,7 @@ describe("Test changing multisig threshold", async () => {
     dsl = new MultisigDsl(program);
   });
 
-  it("should change threshold of multisig", async () => {
+  it("should change owners of multisig and threshold", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -40,10 +40,19 @@ describe("Test changing multisig threshold", async () => {
       threshold
     );
 
-    // Create instruction to change multisig threshold
-    let newThreshold = new BN(3);
+    const newOwnerA = Keypair.generate();
+    const newOwnerB = Keypair.generate();
+    const newOwnerC = Keypair.generate();
+    const newOwners = [
+      newOwnerA.publicKey,
+      newOwnerB.publicKey,
+      newOwnerC.publicKey,
+    ];
+    const newThreshold = new BN(1);
+
+    // Create instruction to change multisig owners
     let transactionInstruction = await program.methods
-      .changeThreshold(newThreshold)
+      .setOwnersAndChangeThreshold(newOwners, newThreshold)
       .accounts({
         multisig: multisig.address,
         multisigSigner: multisig.signer,
@@ -73,16 +82,16 @@ describe("Test changing multisig threshold", async () => {
     );
     assert.deepStrictEqual(
       actualMultisig.owners,
-      owners,
-      "Should not have updated owners"
+      newOwners,
+      "Should have updated to new owners"
     );
     assert.ok(
-      actualMultisig.ownerSetSeqno === 0,
-      "Should not have incremented owner set seq number"
+      actualMultisig.ownerSetSeqno === 1,
+      "Should have incremented owner set seq number"
     );
   });
 
-  it("should require new threshold to be met", async () => {
+  it("should not allow old owners to propose new transaction after ownership and threshold change", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -96,9 +105,19 @@ describe("Test changing multisig threshold", async () => {
       threshold
     );
 
-    let newThreshold = new BN(3);
+    const newOwnerA = Keypair.generate();
+    const newOwnerB = Keypair.generate();
+    const newOwnerC = Keypair.generate();
+    const newOwners = [
+      newOwnerA.publicKey,
+      newOwnerB.publicKey,
+      newOwnerC.publicKey,
+    ];
+    const newThreshold = new BN(1);
+
+    // Create instruction to change multisig owners
     let transactionInstruction = await program.methods
-      .changeThreshold(newThreshold)
+      .setOwnersAndChangeThreshold(newOwners, newThreshold)
       .accounts({
         multisig: multisig.address,
         multisigSigner: multisig.signer,
@@ -121,55 +140,31 @@ describe("Test changing multisig threshold", async () => {
     );
 
     let transactionInstruction2 = await program.methods
-      .changeThreshold(threshold)
+      .setOwners(owners)
       .accounts({
         multisig: multisig.address,
         multisigSigner: multisig.signer,
       })
       .instruction();
 
-    const transactionAddress2: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction2,
-      multisig.address,
-      1000
-    );
-    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress2);
-
-    // Fail when trying to execute with the old threshold
     try {
-      await dsl.executeTransaction(
-        transactionAddress2,
+      await dsl.proposeTransaction(
+        ownerA,
         transactionInstruction2,
-        multisig.signer,
-        multisig.address
+        multisig.address,
+        1000
       );
-      fail("Should have failed to execute transaction");
+      fail("Should have failed to propose transaction");
     } catch (e) {
       assert.ok(
         e.message.includes(
-          "Error Code: NotEnoughSigners. Error Number: 6002. Error Message: Not enough owners signed this transaction"
+          "Error Code: InvalidOwner. Error Number: 6000. Error Message: The given owner is not part of this multisig"
         )
       );
     }
-
-    await dsl.approveTransaction(ownerC, multisig.address, transactionAddress2);
-    //Succeed when reaching the new threshold
-    await dsl.executeTransaction(
-      transactionAddress2,
-      transactionInstruction2,
-      multisig.signer,
-      multisig.address
-    );
-
-    let actualMultisig = await program.account.multisig.fetch(multisig.address);
-    assert.ok(
-      threshold.eq(actualMultisig.threshold),
-      "Should have updated threshold"
-    );
   });
 
-  it("should use new threshold on an already existing transaction", async () => {
+  it("should not allow old owners to approve new transaction after ownership change", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -183,10 +178,19 @@ describe("Test changing multisig threshold", async () => {
       threshold
     );
 
-    let newThreshold = new BN(1);
-    let evenNewerThreshold = new BN(1);
+    const newOwnerA = Keypair.generate();
+    const newOwnerB = Keypair.generate();
+    const newOwnerC = Keypair.generate();
+    const newOwners = [
+      newOwnerA.publicKey,
+      newOwnerB.publicKey,
+      newOwnerC.publicKey,
+    ];
+    const newThreshold = new BN(1);
+
+    // Create instruction to change multisig owners
     let transactionInstruction = await program.methods
-      .changeThreshold(newThreshold)
+      .setOwnersAndChangeThreshold(newOwners, newThreshold)
       .accounts({
         multisig: multisig.address,
         multisigSigner: multisig.signer,
@@ -196,21 +200,6 @@ describe("Test changing multisig threshold", async () => {
     const transactionAddress: PublicKey = await dsl.proposeTransaction(
       ownerA,
       transactionInstruction,
-      multisig.address,
-      1000
-    );
-
-    let transactionInstruction2 = await program.methods
-      .changeThreshold(evenNewerThreshold)
-      .accounts({
-        multisig: multisig.address,
-        multisigSigner: multisig.signer,
-      })
-      .instruction();
-
-    const transactionAddress2: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction2,
       multisig.address,
       1000
     );
@@ -223,154 +212,38 @@ describe("Test changing multisig threshold", async () => {
       multisig.address
     );
 
-    //Threshold should now be set to 1 meaning that transaction 2 has met the 1/3 approval required for execution
-    await dsl.executeTransaction(
-      transactionAddress2,
+    let transactionInstruction2 = await program.methods
+      .setOwners(owners)
+      .accounts({
+        multisig: multisig.address,
+        multisigSigner: multisig.signer,
+      })
+      .instruction();
+
+    const transactionAddress2: PublicKey = await dsl.proposeTransaction(
+      newOwnerA,
       transactionInstruction2,
-      multisig.signer,
-      multisig.address
-    );
-
-    //The already existing transaction has now been executed and should update the threshold to 3
-
-    let actualMultisig = await program.account.multisig.fetch(multisig.address);
-    assert.ok(
-      evenNewerThreshold.eq(actualMultisig.threshold),
-      "Should have updated threshold"
-    );
-  });
-
-  it("should not allow 0 threshold", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const multisigSize = 200; // Big enough.
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      multisigSize,
-      threshold
-    );
-
-    // Create instruction to change multisig threshold
-    let newThreshold = new BN(0);
-    let transactionInstruction = await program.methods
-      .changeThreshold(newThreshold)
-      .accounts({
-        multisig: multisig.address,
-        multisigSigner: multisig.signer,
-      })
-      .instruction();
-
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction,
       multisig.address,
       1000
     );
 
-    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     try {
-      await dsl.executeTransaction(
-        transactionAddress,
-        transactionInstruction,
-        multisig.signer,
-        multisig.address
+      await dsl.approveTransaction(
+        ownerB,
+        multisig.address,
+        transactionAddress2
       );
-      fail("should have failed to execute transaction");
+      fail("Should have failed to approve transaction");
     } catch (e) {
       assert.ok(
         e.message.includes(
-          "Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0"
+          "Error Code: InvalidOwner. Error Number: 6000. Error Message: The given owner is not part of this multisig"
         )
       );
     }
-
-    let actualMultisig = await program.account.multisig.fetch(multisig.address);
-    assert.strictEqual(actualMultisig.nonce, multisig.nonce);
-    assert.ok(
-      threshold.eq(actualMultisig.threshold),
-      "Should not have updated threshold"
-    );
-    assert.deepStrictEqual(
-      actualMultisig.owners,
-      owners,
-      "Should not have updated owners"
-    );
-    assert.ok(
-      actualMultisig.ownerSetSeqno === 0,
-      "Should not have incremented owner set seq number"
-    );
   });
 
-  it("should not allow threshold greater than number of owners", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const multisigSize = 200; // Big enough.
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      multisigSize,
-      threshold
-    );
-
-    // Create instruction to change multisig threshold
-    let newThreshold = new BN(4);
-    let transactionInstruction = await program.methods
-      .changeThreshold(newThreshold)
-      .accounts({
-        multisig: multisig.address,
-        multisigSigner: multisig.signer,
-      })
-      .instruction();
-
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction,
-      multisig.address,
-      1000
-    );
-
-    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
-    try {
-      await dsl.executeTransaction(
-        transactionAddress,
-        transactionInstruction,
-        multisig.signer,
-        multisig.address
-      );
-      fail("should have failed to execute transaction");
-    } catch (e) {
-      assert.ok(
-        e.message.includes(
-          "Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0"
-        )
-      );
-    }
-
-    let actualMultisig = await program.account.multisig.fetch(multisig.address);
-    assert.strictEqual(actualMultisig.nonce, multisig.nonce);
-    assert.ok(
-      threshold.eq(actualMultisig.threshold),
-      "Should not have updated threshold"
-    );
-    assert.deepStrictEqual(
-      actualMultisig.owners,
-      owners,
-      "Should not have updated owners"
-    );
-    assert.ok(
-      actualMultisig.ownerSetSeqno === 0,
-      "Should not have incremented owner set seq number"
-    );
-  });
-
-  it("should not allow threshold to be changed by non multisig signer", async () => {
+  it("should not allow any more approvals on a transaction if owners and threshold change", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -393,60 +266,78 @@ describe("Test changing multisig threshold", async () => {
       newOwnerC.publicKey,
     ];
 
-    try {
-      // Attempt to change the multisig threshold
-      await program.methods
-        .changeThreshold(new BN(1))
-        .accounts({
-          multisig: multisig.address,
-          multisigSigner: multisig.signer,
-        })
-        .rpc();
-      fail("Should have failed to execute transaction");
-    } catch (e) {
-      assert.ok(e.message.includes("Signature verification failed"));
-    }
+    const newThreshold = new BN(1);
+
+    // Create instruction to change multisig owners
+    let transactionInstruction = await program.methods
+      .setOwnersAndChangeThreshold(newOwners, newThreshold)
+      .accounts({
+        multisig: multisig.address,
+        multisigSigner: multisig.signer,
+      })
+      .instruction();
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(
+      ownerA,
+      transactionInstruction,
+      multisig.address,
+      1000
+    );
+
+    let transactionInstruction2 = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(1_000_000_000),
+      toPubkey: provider.publicKey,
+    });
+
+    const transactionAddress2: PublicKey = await dsl.proposeTransaction(
+      ownerA,
+      transactionInstruction2,
+      multisig.address,
+      1000
+    );
+
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+    await dsl.executeTransaction(
+      transactionAddress,
+      transactionInstruction,
+      multisig.signer,
+      multisig.address
+    );
+
+    let transactionAccount = await program.account.transaction.fetch(
+      transactionAddress2
+    );
+    let actualMultisig = await program.account.multisig.fetch(multisig.address);
+
+    assert.strictEqual(
+      actualMultisig.ownerSetSeqno,
+      1,
+      "Should have incremented owner set seq number"
+    );
+    assert.strictEqual(
+      transactionAccount.ownerSetSeqno,
+      0,
+      "Owner set sequence number should not have updated"
+    );
 
     try {
-      // Attempt to change the multisig threshold with provider key as signer
-      await program.methods
-        .changeThreshold(new BN(1))
-        .accounts({
-          multisig: multisig.address,
-          multisigSigner: provider.publicKey,
-        })
-        .rpc();
-      fail("Should have failed to execute transaction");
-    } catch (e) {
-      assert.ok(
-        e.message.includes(
-          "Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated"
-        )
+      await dsl.approveTransaction(
+        newOwnerB,
+        multisig.address,
+        transactionAddress2
       );
-    }
-
-    try {
-      // Attempt to change the multisig threshold with an owner key as signer
-      await program.methods
-        .changeThreshold(new BN(1))
-        .accounts({
-          multisig: multisig.address,
-          multisigSigner: ownerA.publicKey,
-        })
-        .signers([ownerA])
-        .rpc();
-      fail("Should have failed to execute transaction");
+      fail("Should have failed to approve transaction");
     } catch (e) {
       assert.ok(
         e.message.includes(
-          "Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated"
+          "Error Code: ConstraintRaw. Error Number: 2003. Error Message: A raw constraint was violated."
         )
       );
     }
   });
 
-  // Threshold is of type u64, BN(-1) will actually be interpreted as 1
-  it("ignores negatives on updated threshold", async () => {
+  it("should not allow transaction execution if owners and threshold change", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -460,10 +351,165 @@ describe("Test changing multisig threshold", async () => {
       threshold
     );
 
-    // Create instruction to change multisig threshold
-    let newThreshold = new BN(-1);
+    const newOwnerA = Keypair.generate();
+    const newOwnerB = Keypair.generate();
+    const newOwnerC = Keypair.generate();
+    const newOwners = [
+      newOwnerA.publicKey,
+      newOwnerB.publicKey,
+      newOwnerC.publicKey,
+    ];
+
+    const newThreshold = new BN(1);
+
+    // Create instruction to change multisig owners
     let transactionInstruction = await program.methods
-      .changeThreshold(newThreshold)
+      .setOwnersAndChangeThreshold(newOwners, newThreshold)
+      .accounts({
+        multisig: multisig.address,
+        multisigSigner: multisig.signer,
+      })
+      .instruction();
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(
+      ownerA,
+      transactionInstruction,
+      multisig.address,
+      1000
+    );
+
+    let transactionInstruction2 = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(1_000_000_000),
+      toPubkey: provider.publicKey,
+    });
+
+    const transactionAddress2: PublicKey = await dsl.proposeTransaction(
+      ownerA,
+      transactionInstruction2,
+      multisig.address,
+      1000
+    );
+
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+    await dsl.executeTransaction(
+      transactionAddress,
+      transactionInstruction,
+      multisig.signer,
+      multisig.address
+    );
+
+    let transactionAccount = await program.account.transaction.fetch(
+      transactionAddress2
+    );
+    let actualMultisig = await program.account.multisig.fetch(multisig.address);
+
+    assert.strictEqual(
+      actualMultisig.ownerSetSeqno,
+      1,
+      "Should have incremented owner set seq number"
+    );
+    assert.strictEqual(
+      transactionAccount.ownerSetSeqno,
+      0,
+      "Owner set sequence number should not have updated"
+    );
+
+    try {
+      await dsl.executeTransaction(
+        transactionAddress2,
+        transactionInstruction2,
+        multisig.signer,
+        multisig.address
+      );
+      fail("Should have failed to execute transaction");
+    } catch (e) {
+      assert.ok(
+        e.message.includes(
+          "Error Code: ConstraintRaw. Error Number: 2003. Error Message: A raw constraint was violated."
+        )
+      );
+    }
+  });
+
+  it("should not allow owners and threshold to be changed by non multisig signer", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const multisigSize = 200; // Big enough.
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      multisigSize,
+      threshold
+    );
+
+    const newOwnerA = Keypair.generate();
+    const newOwnerB = Keypair.generate();
+    const newOwnerC = Keypair.generate();
+    const newOwners = [
+      newOwnerA.publicKey,
+      newOwnerB.publicKey,
+      newOwnerC.publicKey,
+    ];
+
+    const newThreshold = new BN(1);
+
+    try {
+      // Attempt to change the multisig owners
+      await program.methods
+        .setOwnersAndChangeThreshold(newOwners, newThreshold)
+        .accounts({
+          multisig: multisig.address,
+          multisigSigner: multisig.signer,
+        })
+        .rpc();
+      fail("Should have failed to execute transaction");
+    } catch (e) {
+      assert.ok(e.message.includes("Signature verification failed"));
+    }
+
+    try {
+      // Attempt to change the multisig owners with provider key as signer
+      await program.methods
+        .setOwnersAndChangeThreshold(newOwners, newThreshold)
+        .accounts({
+          multisig: multisig.address,
+          multisigSigner: provider.publicKey,
+        })
+        .rpc();
+      fail("Should have failed to execute transaction");
+    } catch (e) {
+      assert.ok(
+        e.message.includes(
+          "Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated"
+        )
+      );
+    }
+  });
+
+  it("should not allow owners to be changed to empty list", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const multisigSize = 200; // Big enough.
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      multisigSize,
+      threshold
+    );
+
+    const newOwners = [];
+    const newThreshold = new BN(1);
+
+    // Create instruction to change multisig owners
+    let transactionInstruction = await program.methods
+      .setOwnersAndChangeThreshold(newOwners, newThreshold)
       .accounts({
         multisig: multisig.address,
         multisigSigner: multisig.signer,
@@ -479,27 +525,74 @@ describe("Test changing multisig threshold", async () => {
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
-    await dsl.executeTransaction(
-      transactionAddress,
-      transactionInstruction,
-      multisig.signer,
-      multisig.address
+    try {
+      await dsl.executeTransaction(
+        transactionAddress,
+        transactionInstruction,
+        multisig.signer,
+        multisig.address
+      );
+      fail("Should have not executed transaction");
+    } catch (e) {
+      assert.ok(
+        e.message.includes(
+          "Error Code: InvalidOwnersLen. Error Number: 6001. Error Message: Owners length must be non zero"
+        )
+      );
+    }
+  });
+
+  it("should not allow threshold larger than owners list length", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const multisigSize = 200; // Big enough.
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      multisigSize,
+      threshold
     );
 
-    let actualMultisig = await program.account.multisig.fetch(multisig.address);
-    assert.strictEqual(actualMultisig.nonce, multisig.nonce);
-    assert.ok(
-      new BN(1).eq(actualMultisig.threshold),
-      "Should have updated threshold"
+    const newOwnerA = Keypair.generate();
+    const newOwnerB = Keypair.generate();
+    const newOwners = [newOwnerA.publicKey, newOwnerB.publicKey];
+    const newThreshold = new BN(3);
+
+    // Create instruction to change multisig owners
+    let transactionInstruction = await program.methods
+      .setOwnersAndChangeThreshold(newOwners, newThreshold)
+      .accounts({
+        multisig: multisig.address,
+        multisigSigner: multisig.signer,
+      })
+      .instruction();
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(
+      ownerA,
+      transactionInstruction,
+      multisig.address,
+      1000
     );
-    assert.deepStrictEqual(
-      actualMultisig.owners,
-      owners,
-      "Should not have updated owners"
-    );
-    assert.ok(
-      actualMultisig.ownerSetSeqno === 0,
-      "Should not have incremented owner set seq number"
-    );
+
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+
+    try {
+      await dsl.executeTransaction(
+        transactionAddress,
+        transactionInstruction,
+        multisig.signer,
+        multisig.address
+      );
+      fail("Should have not executed transaction");
+    } catch (e) {
+      assert.ok(
+        e.message.includes(
+          "Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0"
+        )
+      );
+    }
   });
 });

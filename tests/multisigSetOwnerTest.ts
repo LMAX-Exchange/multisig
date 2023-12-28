@@ -477,6 +477,25 @@ describe("Test changing multisig owner", async () => {
         )
       );
     }
+
+    try {
+      // Attempt to change the multisig owners with an owner key as signer
+      await program.methods
+        .setOwners(newOwners)
+        .accounts({
+          multisig: multisig.address,
+          multisigSigner: ownerA.publicKey,
+        })
+        .signers([ownerA])
+        .rpc();
+      fail("Should have failed to execute transaction");
+    } catch (e) {
+      assert.ok(
+        e.message.includes(
+          "Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated"
+        )
+      );
+    }
   });
 
   it("should not allow owners to be changed to empty list", async () => {
