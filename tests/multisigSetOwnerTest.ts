@@ -478,4 +478,113 @@ describe("Test changing multisig owner", async () => {
       );
     }
   });
+
+  it("should not allow owners to be changed to empty list", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const multisigSize = 200; // Big enough.
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      multisigSize,
+      threshold
+    );
+
+    const newOwners = [];
+
+    // Create instruction to change multisig owners
+    let transactionInstruction = await program.methods
+      .setOwners(newOwners)
+      .accounts({
+        multisig: multisig.address,
+        multisigSigner: multisig.signer,
+      })
+      .instruction();
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(
+      ownerA,
+      transactionInstruction,
+      multisig.address,
+      1000
+    );
+
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+
+    try {
+      await dsl.executeTransaction(
+        transactionAddress,
+        transactionInstruction,
+        multisig.signer,
+        multisig.address
+      );
+      fail("Should have not executed transaction");
+    } catch (e) {
+      assert.ok(
+        e.message.includes(
+          "Error Code: InvalidOwnersLen. Error Number: 6001. Error Message: Owners length must be non zero"
+        )
+      );
+    }
+  });
+
+  it("should update threshold to owners list length if new owners list is smaller than threshold", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const multisigSize = 200; // Big enough.
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      multisigSize,
+      threshold
+    );
+
+    const newOwnerA = Keypair.generate();
+    const newOwners = [newOwnerA.publicKey];
+
+    // Create instruction to change multisig owners
+    let transactionInstruction = await program.methods
+      .setOwners(newOwners)
+      .accounts({
+        multisig: multisig.address,
+        multisigSigner: multisig.signer,
+      })
+      .instruction();
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(
+      ownerA,
+      transactionInstruction,
+      multisig.address,
+      1000
+    );
+
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+    await dsl.executeTransaction(
+      transactionAddress,
+      transactionInstruction,
+      multisig.signer,
+      multisig.address
+    );
+
+    let actualMultisig = await program.account.multisig.fetch(multisig.address);
+    assert.strictEqual(actualMultisig.nonce, multisig.nonce);
+    assert.ok(
+      new BN(1).eq(actualMultisig.threshold),
+      "Should have updated threshold to owners length"
+    );
+    assert.deepStrictEqual(
+      actualMultisig.owners,
+      newOwners,
+      "Should have updated to new owners"
+    );
+    assert.ok(
+      actualMultisig.ownerSetSeqno === 1,
+      "Should have incremented owner set seq number"
+    );
+  });
 });
