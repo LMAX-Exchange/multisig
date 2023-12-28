@@ -181,6 +181,7 @@ describe("Test transaction accounts", async () => {
         multisig.address,
         1000
       );
+      fail("Should have failed to propose transaction");
     } catch (e) {
       assert.ok(
         e.message.includes(
@@ -261,6 +262,7 @@ describe("Test transaction accounts", async () => {
         multisig.signer,
         multisig.address
       );
+      fail("Should have failed to execute transaction");
     } catch (e) {
       assert.ok(
         e.message.includes(
