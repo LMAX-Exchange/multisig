@@ -13,7 +13,7 @@ import { ChildProcess } from "node:child_process";
 import { fail } from "node:assert";
 import { cat } from "shelljs";
 
-describe("Test changing multisig owner", async () => {
+describe("Test changing multisig threshold", async () => {
   let provider: AnchorProvider;
   let program: Program;
   let validatorProcess: ChildProcess;
@@ -269,7 +269,7 @@ describe("Test changing multisig owner", async () => {
       );
       fail("should have failed to execute transaction")
     } catch (e) {
-      assert.ok(e.message.includes('Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners'))
+      assert.ok(e.message.includes('Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0'))
     }
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);

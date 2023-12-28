@@ -329,7 +329,7 @@ pub enum ErrorCode {
     UnableToDelete,
     #[msg("The given transaction has already been executed.")]
     AlreadyExecuted,
-    #[msg("Threshold must be less than or equal to the number of owners.")]
+    #[msg("Threshold must be less than or equal to the number of owners and greater than 0.")]
     InvalidThreshold,
     #[msg("Owners must be unique")]
     UniqueOwners,

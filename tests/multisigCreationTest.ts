@@ -56,7 +56,7 @@ describe("Test creation of multisig account", async () => {
     } catch (e: any) {
       assert.ok(
         e.message.includes(
-          "Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners"
+          "Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0"
         )
       );
     }
@@ -76,7 +76,7 @@ describe("Test creation of multisig account", async () => {
     } catch (e: any) {
       assert.ok(
         e.message.includes(
-          "Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners"
+          "Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0"
         )
       );
     }
@@ -93,7 +93,7 @@ describe("Test creation of multisig account", async () => {
     } catch (e: any) {
       assert.ok(
         e.message.includes(
-          "Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners"
+          "Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0"
         )
       );
     }
