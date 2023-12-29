@@ -58,6 +58,7 @@ pub mod coral_multisig {
         pid: Pubkey,
         accs: Vec<TransactionAccount>,
         data: Vec<u8>,
+        execute_auth: Option<Pubkey>,
     ) -> Result<()> {
         let owner_index = ctx
             .accounts
@@ -79,7 +80,7 @@ pub mod coral_multisig {
         tx.multisig = ctx.accounts.multisig.key();
         tx.did_execute = false;
         tx.owner_set_seqno = ctx.accounts.multisig.owner_set_seqno;
-        tx.execute_authority = ctx.accounts.execute_authority.as_ref().map(|acc| acc.key());
+        tx.execute_authority = execute_auth;
 
         Ok(())
     }
@@ -186,7 +187,6 @@ pub struct CreateTransaction<'info> {
     transaction: Box<Account<'info, Transaction>>,
     // One of the owners. Checked in the handler.
     proposer: Signer<'info>,
-    execute_authority: Option<SystemAccount<'info>>,
 }
 
 #[derive(Accounts)]

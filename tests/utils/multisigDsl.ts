@@ -63,12 +63,11 @@ export class MultisigDsl {
     const transactionAccount = Keypair.generate();
 
     await this.program.methods
-      .createTransaction(ix.programId, ix.keys, ix.data)
+      .createTransaction(ix.programId, ix.keys, ix.data, executeAuth ?? null)
       .accounts({
         multisig: multisig,
         transaction: transactionAccount.publicKey,
         proposer: proposer.publicKey,
-        executeAuthority: executeAuth ?? null,
       })
       .preInstructions([
         await this.program.account.transaction.createInstruction(
