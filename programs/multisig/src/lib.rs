@@ -58,6 +58,7 @@ pub mod coral_multisig {
         pid: Pubkey,
         accs: Vec<TransactionAccount>,
         data: Vec<u8>,
+        close_auth: Pubkey,
     ) -> Result<()> {
         let owner_index = ctx
             .accounts
@@ -79,6 +80,7 @@ pub mod coral_multisig {
         tx.multisig = ctx.accounts.multisig.key();
         tx.did_execute = false;
         tx.owner_set_seqno = ctx.accounts.multisig.owner_set_seqno;
+        tx.close_authority = close_auth;
 
         Ok(())
     }
@@ -166,6 +168,19 @@ pub mod coral_multisig {
 
         Ok(())
     }
+
+    pub fn close_transaction(ctx: Context<CloseTransaction>) -> Result<()> {
+        require!(ctx.accounts.close_authority.key() == ctx.accounts.transaction.close_authority.key(),
+            ErrorCode::InvalidCloseAuthority);
+
+        let tx = ctx.accounts.transaction.to_account_info();
+        let mut tx_balance = tx.try_borrow_mut_lamports()?;
+        let successor = ctx.accounts.successor.to_account_info();
+        let mut successor_balance = successor.try_borrow_mut_lamports()?;
+        **successor_balance = (**successor_balance).checked_add(**tx_balance).unwrap();
+        **tx_balance = 0;
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -218,6 +233,16 @@ pub struct ExecuteTransaction<'info> {
     transaction: Box<Account<'info, Transaction>>,
 }
 
+#[derive(Accounts)]
+pub struct CloseTransaction<'info> {
+    close_authority: Signer<'info>,
+    /// CHECK: success can be any address where rent exempt funds are sent
+    #[account(mut)]
+    successor:  AccountInfo<'info>,
+    #[account(mut)]
+    transaction: Box<Account<'info, Transaction>>,
+}
+
 #[account]
 pub struct Multisig {
     pub owners: Vec<Pubkey>,
@@ -242,6 +267,8 @@ pub struct Transaction {
     pub did_execute: bool,
     // Owner set sequence number.
     pub owner_set_seqno: u32,
+    // Account with authority to close transaction account
+    pub close_authority: Pubkey,
 }
 
 impl From<&Transaction> for Instruction {
@@ -333,4 +360,6 @@ pub enum ErrorCode {
     InvalidThreshold,
     #[msg("Owners must be unique")]
     UniqueOwners,
+    #[msg("The given close authority does not match the transaction close authority.")]
+    InvalidCloseAuthority,
 }

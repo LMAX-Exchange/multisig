@@ -56,12 +56,13 @@ export class MultisigDsl {
     proposer: Keypair,
     ix: TransactionInstruction,
     multisig: PublicKey,
-    txSize: number
+    txSize: number,
+    closeAuth? : PublicKey,
   ) {
     const transactionAccount = Keypair.generate();
 
     await this.program.methods
-      .createTransaction(ix.programId, ix.keys, ix.data)
+      .createTransaction(ix.programId, ix.keys, ix.data, closeAuth ?? this.program.provider.publicKey)
       .accounts({
         multisig: multisig,
         transaction: transactionAccount.publicKey,
@@ -123,5 +124,21 @@ export class MultisigDsl {
           })
       )
       .rpc();
+  }
+
+  async closeTransaction(
+      tx: PublicKey,
+      successor: PublicKey,
+      closeAuth? : Keypair
+  ) {
+    await this.program.methods
+        .closeTransaction()
+        .accounts({
+          closeAuthority: closeAuth.publicKey ?? this.program.provider.publicKey,
+          successor,
+          transaction: tx,
+        })
+        .signers(closeAuth !== undefined ? [closeAuth] : [])
+        .rpc();
   }
 }
