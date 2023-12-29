@@ -1,5 +1,6 @@
 import { Keypair, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { BN, Program } from "@coral-xyz/anchor";
+import { Key } from "node:readline";
 
 export interface MultisigAccount {
   address: PublicKey;
@@ -56,7 +57,8 @@ export class MultisigDsl {
     proposer: Keypair,
     ix: TransactionInstruction,
     multisig: PublicKey,
-    txSize: number
+    txSize: number,
+    executeAuth?: PublicKey
   ) {
     const transactionAccount = Keypair.generate();
 
@@ -66,6 +68,7 @@ export class MultisigDsl {
         multisig: multisig,
         transaction: transactionAccount.publicKey,
         proposer: proposer.publicKey,
+        executeAuthority: executeAuth ?? null,
       })
       .preInstructions([
         await this.program.account.transaction.createInstruction(
@@ -99,15 +102,21 @@ export class MultisigDsl {
     tx: PublicKey,
     ix: TransactionInstruction,
     multisigSigner: PublicKey,
-    multisigAddress: PublicKey
+    multisigAddress: PublicKey,
+    executor?: Keypair
   ) {
+    let accounts = {
+      multisig: multisigAddress,
+      multisigSigner,
+      transaction: tx,
+    };
     await this.program.methods
       .executeTransaction()
-      .accounts({
-        multisig: multisigAddress,
-        multisigSigner,
-        transaction: tx,
-      })
+      .accounts(
+        executor !== undefined
+          ? { ...accounts, executor: executor.publicKey }
+          : accounts
+      )
       .remainingAccounts(
         ix.keys
           // Change the signer status on the vendor signer since it's signed by the program, not the client.
@@ -122,6 +131,7 @@ export class MultisigDsl {
             isSigner: false,
           })
       )
+      .signers(executor !== undefined ? [executor] : [])
       .rpc();
   }
 }

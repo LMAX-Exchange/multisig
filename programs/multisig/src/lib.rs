@@ -79,6 +79,7 @@ pub mod coral_multisig {
         tx.multisig = ctx.accounts.multisig.key();
         tx.did_execute = false;
         tx.owner_set_seqno = ctx.accounts.multisig.owner_set_seqno;
+        tx.execute_authority = ctx.accounts.execute_authority.as_ref().map(|acc| acc.key());
 
         Ok(())
     }
@@ -128,6 +129,10 @@ pub mod coral_multisig {
         // Has this been executed already?
         if ctx.accounts.transaction.did_execute {
             return Err(ErrorCode::AlreadyExecuted.into());
+        }
+
+        if ctx.accounts.transaction.execute_authority.filter(|key| key != ctx.accounts.executor.key).is_some() {
+            return Err(ErrorCode::InvalidExecutor.into());
         }
 
         // Do we have enough signers.
@@ -181,6 +186,7 @@ pub struct CreateTransaction<'info> {
     transaction: Box<Account<'info, Transaction>>,
     // One of the owners. Checked in the handler.
     proposer: Signer<'info>,
+    execute_authority: Option<SystemAccount<'info>>,
 }
 
 #[derive(Accounts)]
@@ -198,8 +204,8 @@ pub struct Auth<'info> {
     #[account(mut)]
     multisig: Box<Account<'info, Multisig>>,
     #[account(
-        seeds = [multisig.key().as_ref()],
-        bump = multisig.nonce,
+    seeds = [multisig.key().as_ref()],
+    bump = multisig.nonce,
     )]
     multisig_signer: Signer<'info>,
 }
@@ -210,12 +216,13 @@ pub struct ExecuteTransaction<'info> {
     multisig: Box<Account<'info, Multisig>>,
     /// CHECK: multisig_signer is a PDA program signer. Data is never read or written to
     #[account(
-        seeds = [multisig.key().as_ref()],
-        bump = multisig.nonce,
+    seeds = [multisig.key().as_ref()],
+    bump = multisig.nonce,
     )]
     multisig_signer: UncheckedAccount<'info>,
     #[account(mut, has_one = multisig)]
     transaction: Box<Account<'info, Transaction>>,
+    executor: Signer<'info>,
 }
 
 #[account]
@@ -232,6 +239,8 @@ pub struct Transaction {
     pub multisig: Pubkey,
     // Target program to execute against.
     pub program_id: Pubkey,
+    // Optional authority to execute transaction
+    pub execute_authority: Option<Pubkey>,
     // Accounts requried for the transaction.
     pub accounts: Vec<TransactionAccount>,
     // Instruction data for the transaction.
@@ -333,4 +342,6 @@ pub enum ErrorCode {
     InvalidThreshold,
     #[msg("Owners must be unique")]
     UniqueOwners,
+    #[msg("Executor is not execute authority of transaction")]
+    InvalidExecutor,
 }
