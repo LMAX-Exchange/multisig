@@ -10,6 +10,7 @@ jobs:
       - name: Tell me things about where I'm running
         run: |
           set -x
+          cat /etc/security/limits.conf 
           ulimit -a
           cat /proc/sys/kernel/pid_max
           sysctl -a
