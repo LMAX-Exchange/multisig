@@ -1,0 +1,32 @@
+name: Run Tests
+
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Multisig Repository
+        uses: actions/checkout@v2
+
+      - name: Checkout Solana
+        uses: actions/checkout@v4
+        with:
+          repository: solana-labs/solana
+          ref: 'v1.16.24'
+          path: 'solana'
+
+      - name: Add Solana to Path
+        run: echo "`pwd`/solana" >> $GITHUB_PATH
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Run Tests
+        run: npm run test
