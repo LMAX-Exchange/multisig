@@ -4,7 +4,7 @@ on: push
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-2204-4core
 
     steps:
       - name: Checkout Multisig Repository
