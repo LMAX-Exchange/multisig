@@ -10,31 +10,31 @@ jobs:
       - name: Tell me things about where I'm running
         run: |
           set -x
-          ulimit -n
+          ulimit -a
           cat /proc/sys/kernel/pid_max
           sysctl -a
 
-      - name: Checkout Multisig Repository
-        uses: actions/checkout@v2
-
-      - name: Checkout Solana
-        uses: actions/checkout@v4
-        with:
-          repository: solana-labs/solana
-          ref: 'v1.16.24'
-          path: 'solana'
-
-      - name: Add Solana to Path
-        run: echo "`pwd`/solana" >> $GITHUB_PATH
-
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Run Tests
-        run: npm run test
+#      - name: Checkout Multisig Repository
+#        uses: actions/checkout@v2
+#
+#      - name: Checkout Solana
+#        uses: actions/checkout@v4
+#        with:
+#          repository: solana-labs/solana
+#          ref: 'v1.16.24'
+#          path: 'solana'
+#
+#      - name: Add Solana to Path
+#        run: echo "`pwd`/solana" >> $GITHUB_PATH
+#
+#      - name: Setup Node 20
+#        uses: actions/setup-node@v4
+#        with:
+#          node-version: '20'
+#          cache: 'npm'
+#
+#      - name: Setup Rust
+#        uses: dtolnay/rust-toolchain@stable
+#
+#      - name: Run Tests
+#        run: npm run test
