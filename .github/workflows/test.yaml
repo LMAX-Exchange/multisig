@@ -27,7 +27,7 @@ jobs:
           cache: 'npm'
 
       - name: Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Run Tests
         run: npm run test
