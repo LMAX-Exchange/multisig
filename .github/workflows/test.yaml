@@ -20,7 +20,8 @@ jobs:
       - name: Add Solana to Path
         run: echo "`pwd`/solana" >> $GITHUB_PATH
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
