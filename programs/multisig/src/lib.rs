@@ -23,6 +23,8 @@ use anchor_lang::solana_program::instruction::Instruction;
 use std::convert::Into;
 use std::ops::Deref;
 
+const ANCHOR_ACCT_DESCRIM_SIZE: usize = 8;
+
 declare_id!("msigUdDBsR4zSUYqYEDrc1LcgtmuSDDM7KxpRUXNC6U");
 
 #[program]
@@ -169,18 +171,38 @@ pub mod coral_multisig {
 }
 
 #[derive(Accounts)]
+#[instruction(owners: Vec<Pubkey>, threshold: u64, nonce: u8)]
 pub struct CreateMultisig<'info> {
-    #[account(zero, signer)]
+    // see https://book.anchor-lang.com/anchor_references/space.html
+    #[account(
+        init,
+        space = ANCHOR_ACCT_DESCRIM_SIZE + vec_len!(32, owners.len()) + 8 + 1 + 4,
+        payer = payer,
+        signer
+    )]
     multisig: Box<Account<'info, Multisig>>,
+    #[account(mut)]
+    payer: Signer<'info>,
+    system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
+#[instruction(pid: Pubkey, accs: Vec<TransactionAccount>, data: Vec<u8>)]
 pub struct CreateTransaction<'info> {
     multisig: Box<Account<'info, Multisig>>,
-    #[account(zero, signer)]
+    // see https://book.anchor-lang.com/anchor_references/space.html
+    #[account(
+        init,
+        space = ANCHOR_ACCT_DESCRIM_SIZE + 32 + 32 + vec_len!(34, accs.len()) + vec_len!(1, data.len()) + vec_len!(1, multisig.owners.len()) + 1 + 4,
+        payer = payer,
+        signer
+    )]
     transaction: Box<Account<'info, Transaction>>,
     // One of the owners. Checked in the handler.
     proposer: Signer<'info>,
+    #[account(mut)]
+    payer: Signer<'info>,
+    system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -333,4 +355,13 @@ pub enum ErrorCode {
     InvalidThreshold,
     #[msg("Owners must be unique")]
     UniqueOwners,
+}
+
+#[macro_export]
+macro_rules! vec_len {
+    ( $elem_size:expr, $elem_count:expr ) => {
+        {
+            $elem_size * $elem_count + 4
+        }
+    };
 }

@@ -31,12 +31,10 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
     const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const multisigSize = 200; // Big enough.
     const threshold = new BN(2);
 
     const multisig: MultisigAccount = await dsl.createMultisig(
       owners,
-      multisigSize,
       threshold
     );
 
@@ -96,12 +94,10 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
     const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const multisigSize = 200; // Big enough.
     const threshold = new BN(2);
 
     const multisig: MultisigAccount = await dsl.createMultisig(
       owners,
-      multisigSize,
       threshold
     );
 
@@ -169,12 +165,10 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
     const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const multisigSize = 200; // Big enough.
     const threshold = new BN(2);
 
     const multisig: MultisigAccount = await dsl.createMultisig(
       owners,
-      multisigSize,
       threshold
     );
 
@@ -248,12 +242,10 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
     const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const multisigSize = 200; // Big enough.
     const threshold = new BN(2);
 
     const multisig: MultisigAccount = await dsl.createMultisig(
       owners,
-      multisigSize,
       threshold
     );
 
@@ -342,12 +334,10 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
     const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const multisigSize = 200; // Big enough.
     const threshold = new BN(2);
 
     const multisig: MultisigAccount = await dsl.createMultisig(
       owners,
-      multisigSize,
       threshold
     );
 
@@ -437,12 +427,10 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
     const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const multisigSize = 200; // Big enough.
     const threshold = new BN(2);
 
     const multisig: MultisigAccount = await dsl.createMultisig(
       owners,
-      multisigSize,
       threshold
     );
 
@@ -495,12 +483,10 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
     const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const multisigSize = 200; // Big enough.
     const threshold = new BN(2);
 
     const multisig: MultisigAccount = await dsl.createMultisig(
       owners,
-      multisigSize,
       threshold
     );
 
@@ -547,12 +533,10 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
     const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const multisigSize = 200; // Big enough.
     const threshold = new BN(2);
 
     const multisig: MultisigAccount = await dsl.createMultisig(
       owners,
-      multisigSize,
       threshold
     );
 

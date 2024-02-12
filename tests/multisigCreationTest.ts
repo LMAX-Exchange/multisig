@@ -22,16 +22,13 @@ describe("Test creation of multisig account", async () => {
 
   it("should create multisig account", async () => {
     const ownerA = Keypair.generate();
-
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
     const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const multisigSize = 200; // Big enough.
     const threshold = new BN(2);
 
     const multisig: MultisigAccount = await dsl.createMultisig(
       owners,
-      multisigSize,
       threshold
     );
 
@@ -47,11 +44,10 @@ describe("Test creation of multisig account", async () => {
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
     const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const multisigSize = 200; // Big enough.
     const threshold = new BN(4);
 
     try {
-      await dsl.createMultisig(owners, multisigSize, threshold);
+      await dsl.createMultisig(owners, threshold);
       fail("Multisig should not have been created");
     } catch (e: any) {
       assert.ok(
@@ -67,11 +63,10 @@ describe("Test creation of multisig account", async () => {
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
     const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const multisigSize = 200; // Big enough.
     const threshold = new BN(0);
 
     try {
-      await dsl.createMultisig(owners, multisigSize, threshold);
+      await dsl.createMultisig(owners, threshold);
       fail("Multisig should not have been created");
     } catch (e: any) {
       assert.ok(
@@ -84,11 +79,10 @@ describe("Test creation of multisig account", async () => {
 
   it("should not create multisig with 0 threshold and no owners", async () => {
     const owners = [];
-    const multisigSize = 200; // Big enough.
     const threshold = new BN(0);
 
     try {
-      await dsl.createMultisig(owners, multisigSize, threshold);
+      await dsl.createMultisig(owners, threshold);
       fail("Multisig should not have been created");
     } catch (e: any) {
       assert.ok(

@@ -6,8 +6,7 @@ export interface MultisigAccount {
   signer: PublicKey;
   nonce: number;
   owners: Array<PublicKey>;
-  threshold: BN;
-  size: number;
+  threshold: BN
 }
 
 export class MultisigDsl {
@@ -19,7 +18,6 @@ export class MultisigDsl {
 
   async createMultisig(
     owners: Array<PublicKey>,
-    multisigSize: number,
     threshold: BN
   ) {
     const multisig = Keypair.generate();
@@ -33,12 +31,6 @@ export class MultisigDsl {
       .accounts({
         multisig: multisig.publicKey,
       })
-      .preInstructions([
-        await this.program.account.multisig.createInstruction(
-          multisig,
-          multisigSize
-        ),
-      ])
       .signers([multisig])
       .rpc();
 
@@ -47,8 +39,7 @@ export class MultisigDsl {
       signer: multisigSigner,
       nonce: nonce,
       owners: owners,
-      threshold: threshold,
-      size: multisigSize,
+      threshold: threshold
     };
   }
 
@@ -67,12 +58,6 @@ export class MultisigDsl {
         transaction: transactionAccount.publicKey,
         proposer: proposer.publicKey,
       })
-      .preInstructions([
-        await this.program.account.transaction.createInstruction(
-          transactionAccount,
-          txSize
-        ),
-      ])
       .signers([proposer, transactionAccount])
       .rpc();
 
