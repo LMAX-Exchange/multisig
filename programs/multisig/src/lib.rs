@@ -132,6 +132,10 @@ pub mod coral_multisig {
             return Err(ErrorCode::AlreadyExecuted.into());
         }
 
+        if !ctx.accounts.multisig.owners.contains(ctx.accounts.executor.key) {
+            return Err(ErrorCode::InvalidExecutor.into());
+        }
+
         // Do we have enough signers.
         let sig_count = ctx
             .accounts
@@ -238,6 +242,7 @@ pub struct ExecuteTransaction<'info> {
     multisig_signer: UncheckedAccount<'info>,
     #[account(mut, has_one = multisig)]
     transaction: Box<Account<'info, Transaction>>,
+    executor: Signer<'info>,
 }
 
 #[account]
@@ -355,6 +360,8 @@ pub enum ErrorCode {
     InvalidThreshold,
     #[msg("Owners must be unique")]
     UniqueOwners,
+    #[msg("Executor is not a multisig owner")]
+    InvalidExecutor,
 }
 
 #[macro_export]

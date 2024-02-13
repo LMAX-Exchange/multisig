@@ -60,7 +60,8 @@ describe("Test changing multisig threshold", async () => {
       transactionAddress,
       transactionInstruction,
       multisig.signer,
-      multisig.address
+      multisig.address,
+      ownerB
     );
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
@@ -113,7 +114,8 @@ describe("Test changing multisig threshold", async () => {
       transactionAddress,
       transactionInstruction,
       multisig.signer,
-      multisig.address
+      multisig.address,
+      ownerB
     );
 
     let transactionInstruction2 = await program.methods
@@ -138,7 +140,8 @@ describe("Test changing multisig threshold", async () => {
         transactionAddress2,
         transactionInstruction2,
         multisig.signer,
-        multisig.address
+        multisig.address,
+        ownerB
       );
       fail("Should have failed to execute transaction");
     } catch (e) {
@@ -155,7 +158,8 @@ describe("Test changing multisig threshold", async () => {
       transactionAddress2,
       transactionInstruction2,
       multisig.signer,
-      multisig.address
+      multisig.address,
+      ownerB
     );
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
@@ -214,7 +218,8 @@ describe("Test changing multisig threshold", async () => {
       transactionAddress,
       transactionInstruction,
       multisig.signer,
-      multisig.address
+      multisig.address,
+      ownerB
     );
 
     //Threshold should now be set to 1 meaning that transaction 2 has met the 1/3 approval required for execution
@@ -222,7 +227,8 @@ describe("Test changing multisig threshold", async () => {
       transactionAddress2,
       transactionInstruction2,
       multisig.signer,
-      multisig.address
+      multisig.address,
+      ownerB
     );
 
     //The already existing transaction has now been executed and should update the threshold to 3
@@ -269,7 +275,8 @@ describe("Test changing multisig threshold", async () => {
         transactionAddress,
         transactionInstruction,
         multisig.signer,
-        multisig.address
+        multisig.address,
+        ownerB
       );
       fail("should have failed to execute transaction");
     } catch (e) {
@@ -332,7 +339,8 @@ describe("Test changing multisig threshold", async () => {
         transactionAddress,
         transactionInstruction,
         multisig.signer,
-        multisig.address
+        multisig.address,
+        ownerB
       );
       fail("should have failed to execute transaction");
     } catch (e) {
@@ -469,7 +477,8 @@ describe("Test changing multisig threshold", async () => {
       transactionAddress,
       transactionInstruction,
       multisig.signer,
-      multisig.address
+      multisig.address,
+      ownerB
     );
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);

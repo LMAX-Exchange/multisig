@@ -68,7 +68,8 @@ describe("Test changing multisig owner", async () => {
       transactionAddress,
       transactionInstruction,
       multisig.signer,
-      multisig.address
+      multisig.address,
+      ownerB
     );
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
@@ -127,7 +128,8 @@ describe("Test changing multisig owner", async () => {
       transactionAddress,
       transactionInstruction,
       multisig.signer,
-      multisig.address
+      multisig.address,
+      ownerB
     );
 
     let transactionInstruction2 = await program.methods
@@ -197,7 +199,8 @@ describe("Test changing multisig owner", async () => {
       transactionAddress,
       transactionInstruction,
       multisig.signer,
-      multisig.address
+      multisig.address,
+      ownerB
     );
 
     let transactionInstruction2 = await program.methods
@@ -286,7 +289,8 @@ describe("Test changing multisig owner", async () => {
       transactionAddress,
       transactionInstruction,
       multisig.signer,
-      multisig.address
+      multisig.address,
+      ownerB
     );
 
     let transactionAccount = await program.account.transaction.fetch(
@@ -377,7 +381,8 @@ describe("Test changing multisig owner", async () => {
       transactionAddress,
       transactionInstruction,
       multisig.signer,
-      multisig.address
+      multisig.address,
+      ownerB
     );
 
     let transactionAccount = await program.account.transaction.fetch(
@@ -401,7 +406,8 @@ describe("Test changing multisig owner", async () => {
         transactionAddress2,
         transactionInstruction2,
         multisig.signer,
-        multisig.address
+        multisig.address,
+        ownerB
       );
       fail("Should have failed to execute transaction");
     } catch (e) {
@@ -523,7 +529,8 @@ describe("Test changing multisig owner", async () => {
         transactionAddress,
         transactionInstruction,
         multisig.signer,
-        multisig.address
+        multisig.address,
+        ownerB
       );
       fail("Should have not executed transaction");
     } catch (e) {
@@ -571,7 +578,8 @@ describe("Test changing multisig owner", async () => {
       transactionAddress,
       transactionInstruction,
       multisig.signer,
-      multisig.address
+      multisig.address,
+      ownerB
     );
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);

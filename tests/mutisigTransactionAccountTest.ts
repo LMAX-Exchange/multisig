@@ -11,7 +11,6 @@ import { MultisigAccount, MultisigDsl } from "./utils/multisigDsl";
 import { describe } from "mocha";
 import { ChildProcess } from "node:child_process";
 import { fail } from "node:assert";
-import { cat } from "shelljs";
 
 describe("Test transaction accounts", async () => {
   let provider: AnchorProvider;
@@ -235,7 +234,8 @@ describe("Test transaction accounts", async () => {
       transactionAddress,
       transactionInstruction,
       multisig.signer,
-      multisig.address
+      multisig.address,
+      ownerB
     );
 
     let transactionAccount = await program.account.transaction.fetch(
@@ -252,7 +252,8 @@ describe("Test transaction accounts", async () => {
         transactionAddress,
         transactionInstruction,
         multisig.signer,
-        multisig.address
+        multisig.address,
+        ownerB
       );
       fail("Should have failed to execute transaction");
     } catch (e) {
@@ -262,5 +263,138 @@ describe("Test transaction accounts", async () => {
         )
       );
     }
+  });
+
+  it("should not allow non multisig owner to perform execution", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      threshold
+    );
+
+    // Fund the multisig signer account with enough funds to perform transaction twice
+    await provider.sendAndConfirm(
+      new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: provider.publicKey,
+          lamports: new BN(2_000_000_000),
+          toPubkey: multisig.signer,
+        })
+      )
+    );
+
+    let beforeBalance = await provider.connection.getBalance(
+      multisig.signer,
+      "confirmed"
+    );
+    assert.strictEqual(beforeBalance, 2_000_000_000);
+
+    // Create instruction to send funds from multisig
+    let transactionInstruction = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(1_000_000_000),
+      toPubkey: provider.publicKey,
+    });
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(
+      ownerA,
+      transactionInstruction,
+      multisig.address,
+      1000
+    );
+
+    await dsl.approveTransaction(ownerC, multisig.address, transactionAddress);
+
+    let notOwner = Keypair.generate();
+    try {
+      await dsl.executeTransaction(
+        transactionAddress,
+        transactionInstruction,
+        multisig.signer,
+        multisig.address,
+        notOwner
+      );
+      fail("Should have failed to execute transaction");
+    } catch (e) {
+      assert.ok(
+        e.message.includes(
+          "Error Code: InvalidExecutor. Error Number: 6009. Error Message: Executor is not a multisig owner"
+        )
+      );
+    }
+  });
+
+  it("should allow multisig owner to perform execution", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      threshold
+    );
+
+    // Fund the multisig signer account with enough funds to perform transaction twice
+    await provider.sendAndConfirm(
+      new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: provider.publicKey,
+          lamports: new BN(2_000_000_000),
+          toPubkey: multisig.signer,
+        })
+      )
+    );
+
+    let beforeBalance = await provider.connection.getBalance(
+      multisig.signer,
+      "confirmed"
+    );
+    assert.strictEqual(beforeBalance, 2_000_000_000);
+
+    // Create instruction to send funds from multisig
+    let transactionInstruction = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(1_000_000_000),
+      toPubkey: provider.publicKey,
+    });
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(
+      ownerA,
+      transactionInstruction,
+      multisig.address,
+      1000,
+    );
+
+    await dsl.approveTransaction(ownerC, multisig.address, transactionAddress);
+
+    await dsl.executeTransaction(
+      transactionAddress,
+      transactionInstruction,
+      multisig.signer,
+      multisig.address,
+      ownerB
+    );
+
+    let transactionAccount = await program.account.transaction.fetch(
+      transactionAddress
+    );
+
+    assert.ok(
+      transactionAccount.didExecute,
+      "Transaction should have been executed"
+    );
+
+    let afterBalance = await provider.connection.getBalance(
+      multisig.signer,
+      "confirmed"
+    );
+    assert.strictEqual(afterBalance, 1_000_000_000);
   });
 });

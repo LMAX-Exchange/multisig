@@ -1,5 +1,5 @@
-import { Keypair, PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { BN, Program } from "@coral-xyz/anchor";
+import {Keypair, PublicKey, TransactionInstruction} from "@solana/web3.js";
+import {BN, Program} from "@coral-xyz/anchor";
 
 export interface MultisigAccount {
   address: PublicKey;
@@ -84,7 +84,8 @@ export class MultisigDsl {
     tx: PublicKey,
     ix: TransactionInstruction,
     multisigSigner: PublicKey,
-    multisigAddress: PublicKey
+    multisigAddress: PublicKey,
+    executor: Keypair
   ) {
     await this.program.methods
       .executeTransaction()
@@ -92,6 +93,7 @@ export class MultisigDsl {
         multisig: multisigAddress,
         multisigSigner,
         transaction: tx,
+        executor: executor.publicKey
       })
       .remainingAccounts(
         ix.keys
@@ -107,6 +109,7 @@ export class MultisigDsl {
             isSigner: false,
           })
       )
+      .signers([executor])
       .rpc();
   }
 }

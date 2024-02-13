@@ -74,7 +74,8 @@ describe("Test performing signing and execution", async () => {
       transactionAddress,
       transactionInstruction,
       multisig.signer,
-      multisig.address
+      multisig.address,
+      ownerB
     );
 
     let afterBalance = await provider.connection.getBalance(
@@ -132,7 +133,8 @@ describe("Test performing signing and execution", async () => {
         transactionAddress,
         transactionInstruction,
         multisig.signer,
-        multisig.address
+        multisig.address,
+        ownerB
       );
       fail("Should have failed to execute transaction");
     } catch (e) {
@@ -200,7 +202,8 @@ describe("Test performing signing and execution", async () => {
       transactionAddress,
       transactionInstruction,
       multisig.signer,
-      multisig.address
+      multisig.address,
+      ownerB
     );
 
     let afterBalance = await provider.connection.getBalance(
@@ -261,7 +264,8 @@ describe("Test performing signing and execution", async () => {
         transactionAddress,
         transactionInstruction,
         multisig.signer,
-        multisig.address
+        multisig.address,
+        ownerB
       );
       fail("Should have failed to execute transaction");
     } catch (e) {
