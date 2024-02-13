@@ -61,12 +61,7 @@ describe("Test performing signing and execution", async () => {
     );
     assert.strictEqual(beforeBalance, 1_000_000_000);
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction,
-      multisig.address,
-      1000
-    );
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
@@ -121,12 +116,7 @@ describe("Test performing signing and execution", async () => {
     );
     assert.strictEqual(beforeBalance, 1_000_000_000);
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction,
-      multisig.address,
-      1000
-    );
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     try {
       await dsl.executeTransaction(
@@ -187,12 +177,7 @@ describe("Test performing signing and execution", async () => {
     );
     assert.strictEqual(beforeBalance, 1_000_000_000);
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction,
-      multisig.address,
-      1000
-    );
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     // Approve twice with the same owner
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
@@ -249,12 +234,7 @@ describe("Test performing signing and execution", async () => {
     );
     assert.strictEqual(beforeBalance, 1_000_000_000);
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction,
-      multisig.address,
-      1000
-    );
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     //Sign again with the same owner meaning still only 1/3 approval
     await dsl.approveTransaction(ownerA, multisig.address, transactionAddress);
@@ -318,12 +298,7 @@ describe("Test performing signing and execution", async () => {
     );
     assert.strictEqual(beforeBalance, 1_000_000_000);
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction,
-      multisig.address,
-      1000
-    );
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     const notAnOwner = Keypair.generate();
 

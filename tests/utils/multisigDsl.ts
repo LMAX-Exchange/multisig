@@ -46,8 +46,7 @@ export class MultisigDsl {
   async proposeTransaction(
     proposer: Keypair,
     ix: TransactionInstruction,
-    multisig: PublicKey,
-    txSize: number
+    multisig: PublicKey
   ) {
     const transactionAccount = Keypair.generate();
 

@@ -56,12 +56,7 @@ describe("Test changing multisig owner", async () => {
       })
       .instruction();
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction,
-      multisig.address,
-      1000
-    );
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     await dsl.executeTransaction(
@@ -116,12 +111,7 @@ describe("Test changing multisig owner", async () => {
       })
       .instruction();
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction,
-      multisig.address,
-      1000
-    );
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     await dsl.executeTransaction(
@@ -141,12 +131,7 @@ describe("Test changing multisig owner", async () => {
       .instruction();
 
     try {
-      await dsl.proposeTransaction(
-        ownerA,
-        transactionInstruction2,
-        multisig.address,
-        1000
-      );
+      await dsl.proposeTransaction(ownerA, transactionInstruction2, multisig.address);
       fail("Should have failed to propose transaction");
     } catch (e) {
       assert.ok(
@@ -187,12 +172,7 @@ describe("Test changing multisig owner", async () => {
       })
       .instruction();
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction,
-      multisig.address,
-      1000
-    );
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     await dsl.executeTransaction(
@@ -211,12 +191,7 @@ describe("Test changing multisig owner", async () => {
       })
       .instruction();
 
-    const transactionAddress2: PublicKey = await dsl.proposeTransaction(
-      newOwnerA,
-      transactionInstruction2,
-      multisig.address,
-      1000
-    );
+    const transactionAddress2: PublicKey = await dsl.proposeTransaction(newOwnerA, transactionInstruction2, multisig.address);
 
     try {
       await dsl.approveTransaction(
@@ -264,12 +239,7 @@ describe("Test changing multisig owner", async () => {
       })
       .instruction();
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction,
-      multisig.address,
-      1000
-    );
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     let transactionInstruction2 = SystemProgram.transfer({
       fromPubkey: multisig.signer,
@@ -277,12 +247,7 @@ describe("Test changing multisig owner", async () => {
       toPubkey: provider.publicKey,
     });
 
-    const transactionAddress2: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction2,
-      multisig.address,
-      1000
-    );
+    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction2, multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     await dsl.executeTransaction(
@@ -355,12 +320,7 @@ describe("Test changing multisig owner", async () => {
       })
       .instruction();
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction,
-      multisig.address,
-      1000
-    );
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     let transactionInstruction2 = SystemProgram.transfer({
       fromPubkey: multisig.signer,
@@ -368,12 +328,7 @@ describe("Test changing multisig owner", async () => {
       toPubkey: provider.publicKey,
     });
 
-    const transactionAddress2: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction2,
-      multisig.address,
-      1000
-    );
+    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction2, multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress2);
@@ -515,12 +470,7 @@ describe("Test changing multisig owner", async () => {
       })
       .instruction();
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction,
-      multisig.address,
-      1000
-    );
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
@@ -566,12 +516,7 @@ describe("Test changing multisig owner", async () => {
       })
       .instruction();
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(
-      ownerA,
-      transactionInstruction,
-      multisig.address,
-      1000
-    );
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     await dsl.executeTransaction(
