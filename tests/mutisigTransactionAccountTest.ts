@@ -80,7 +80,7 @@ describe("Test transaction accounts", async () => {
     );
   });
 
-  it("should update signers list when a owner signs", async () => {
+  it("should update signers list when an owner signs", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -137,7 +137,7 @@ describe("Test transaction accounts", async () => {
     );
   });
 
-  it("should not update able to propose a transaction if user is not an owner", async () => {
+  it("should not be able to propose a transaction if user is not an owner", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();

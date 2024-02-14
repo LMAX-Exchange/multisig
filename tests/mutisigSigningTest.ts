@@ -80,6 +80,73 @@ describe("Test performing signing and execution", async () => {
     assert.strictEqual(afterBalance, 0);
   });
 
+  it("should handle multiple transactions in parallel", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      threshold
+    );
+
+    // Fund the multisig signer account
+    await provider.sendAndConfirm(
+      new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: provider.publicKey,
+          lamports: new BN(2_000_000_000),
+          toPubkey: multisig.signer,
+        })
+      )
+    );
+
+    // Create instruction to send funds from multisig
+    let transactionInstruction = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(1_000_000_000),
+      toPubkey: provider.publicKey,
+    });
+
+    let beforeBalance = await provider.connection.getBalance(
+      multisig.signer,
+      "confirmed"
+    );
+    assert.strictEqual(beforeBalance, 2_000_000_000);
+
+    const transactionAddress1: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+
+    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress1);
+
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress2);
+
+    await dsl.executeTransaction(
+      transactionAddress1,
+      transactionInstruction,
+      multisig.signer,
+      multisig.address,
+      ownerB
+    );
+
+    await dsl.executeTransaction(
+      transactionAddress2,
+      transactionInstruction,
+      multisig.signer,
+      multisig.address,
+      ownerB
+    );
+
+    let afterBalance = await provider.connection.getBalance(
+      multisig.signer,
+      "confirmed"
+    );
+    assert.strictEqual(afterBalance, 0);
+  });
+
   it("should not perform instructions if not reached multisig threshold", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
@@ -198,7 +265,7 @@ describe("Test performing signing and execution", async () => {
     assert.strictEqual(afterBalance, 0);
   });
 
-  it("should not execute transaction is same user has signed multiple times to reach the threshold", async () => {
+  it("should not execute transaction if same user has signed multiple times to reach the threshold", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
