@@ -25,7 +25,7 @@ describe("Test transaction accounts", async () => {
     dsl = new MultisigDsl(program);
   });
 
-  it("should approve transaction with proposer", async () => {
+  it("should automatically approve transaction with proposer on transaction proposal", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -46,14 +46,12 @@ describe("Test transaction accounts", async () => {
 
     const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
-    let transactionAccount = await program.account.transaction.fetch(
-      transactionAddress
-    );
+    let transactionAccount = await program.account.transaction.fetch(transactionAddress);
 
-    //Signed by user in index 0 not by users in index 1 or 2
-    assert.ok(transactionAccount.signers[0], "OwnerA should have signed");
-    assert.ok(!transactionAccount.signers[1], "OwnerB should not have signed");
-    assert.ok(!transactionAccount.signers[2], "OwnerC should not have signed");
+    //Approved by user in index 0 not by users in index 1 or 2
+    assert.ok(transactionAccount.signers[0], "OwnerA should have approved");
+    assert.ok(!transactionAccount.signers[1], "OwnerB should not have approved");
+    assert.ok(!transactionAccount.signers[2], "OwnerC should not have approved");
     assert.deepStrictEqual(
       transactionAccount.multisig,
       multisig.address,
@@ -80,7 +78,7 @@ describe("Test transaction accounts", async () => {
     );
   });
 
-  it("should update signers list when an owner signs", async () => {
+  it("should update approvers list when an owner approves", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -107,10 +105,10 @@ describe("Test transaction accounts", async () => {
       transactionAddress
     );
 
-    //Signed by owners in index 0 and 2 not by owner in index 1
-    assert.ok(transactionAccount.signers[0], "OwnerA should have signed");
-    assert.ok(!transactionAccount.signers[1], "OwnerB should not have signed");
-    assert.ok(transactionAccount.signers[2], "OwnerC should have signed");
+    //Approve by owners in index 0 and 2 not by owner in index 1
+    assert.ok(transactionAccount.signers[0], "OwnerA should have approved");
+    assert.ok(!transactionAccount.signers[1], "OwnerB should not have approved");
+    assert.ok(transactionAccount.signers[2], "OwnerC should have approved");
     assert.deepStrictEqual(
       transactionAccount.multisig,
       multisig.address,
