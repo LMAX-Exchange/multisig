@@ -39,6 +39,33 @@ describe("Test creation of multisig account", async () => {
     assert.ok(actualMultisig.ownerSetSeqno === 0);
   });
 
+  it("should create multiple multisig accounts", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const ownerD = Keypair.generate();
+    const ownerE = Keypair.generate();
+    const ownersMultisig1 = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const ownersMultisig2 = [ownerC.publicKey, ownerD.publicKey, ownerE.publicKey];
+    const threshold = new BN(2);
+
+    const multisig1: MultisigAccount = await dsl.createMultisig(ownersMultisig1, threshold);
+    const multisig2: MultisigAccount = await dsl.createMultisig(ownersMultisig2, threshold);
+
+    let actualMultisig1 = await program.account.multisig.fetch(multisig1.address);
+    let actualMultisig2 = await program.account.multisig.fetch(multisig2.address);
+
+    assert.strictEqual(actualMultisig1.nonce, multisig1.nonce);
+    assert.ok(multisig1.threshold.eq(actualMultisig1.threshold));
+    assert.deepStrictEqual(actualMultisig1.owners, multisig1.owners);
+    assert.ok(actualMultisig1.ownerSetSeqno === 0);
+
+    assert.strictEqual(actualMultisig2.nonce, multisig2.nonce);
+    assert.ok(multisig2.threshold.eq(actualMultisig2.threshold));
+    assert.deepStrictEqual(actualMultisig2.owners, multisig2.owners);
+    assert.ok(actualMultisig2.ownerSetSeqno === 0);
+  });
+
   it("should fail to create if provided threshold is greater than number of owners", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
