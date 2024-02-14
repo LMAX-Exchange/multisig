@@ -13,7 +13,7 @@ parameters:
 2. Threshold - the number of signers required to execute a transaction.
 
 Once the `Multisig` account is created, one can create a `Transaction`
-account, specifying the parameters for a normal solana transaction.
+account, specifying the parameters for a normal Solana transaction.
 
 To sign, owners should invoke the `approve` instruction, and finally,
 the `execute_transaction`, once enough (i.e. `threshold`) of the owners have
