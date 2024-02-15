@@ -241,6 +241,12 @@ describe("Test transaction accounts", async () => {
         )
       );
     }
+
+    let afterBalance = await provider.connection.getBalance(
+        multisig.signer,
+        "confirmed"
+    );
+    assert.strictEqual(afterBalance, 1_000_000_000);
   });
 
   it("should not allow non multisig owner to perform execution", async () => {
