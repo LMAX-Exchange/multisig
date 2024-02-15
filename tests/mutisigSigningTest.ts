@@ -25,7 +25,7 @@ describe("Test performing signing and execution", async () => {
     dsl = new MultisigDsl(program);
   });
 
-  it("should perform instructions if reached multisig threshold", async () => {
+  it("should perform instructions if reached multisig approval threshold", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -196,7 +196,7 @@ describe("Test performing signing and execution", async () => {
     assert.strictEqual(afterBalance, 0);
   }).timeout(5000);
 
-  it("should not perform instructions if not reached multisig threshold", async () => {
+  it("should not perform instructions if not reached multisig approval threshold", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -257,7 +257,7 @@ describe("Test performing signing and execution", async () => {
     assert.strictEqual(afterBalance, 1_000_000_000);
   });
 
-  it("should sign idempotently", async () => {
+  it("should approve idempotently", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -314,7 +314,7 @@ describe("Test performing signing and execution", async () => {
     assert.strictEqual(afterBalance, 0);
   }).timeout(5000);
 
-  it("should not execute transaction if same user has signed multiple times to reach the threshold", async () => {
+  it("should not execute transaction if same user has approved multiple times to reach the threshold", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -352,7 +352,7 @@ describe("Test performing signing and execution", async () => {
 
     const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
-    //Sign again with the same owner meaning still only 1/3 approval
+    //Approve again with the same owner meaning still only 1/3 approval
     await dsl.approveTransaction(ownerA, multisig.address, transactionAddress);
 
     try {
@@ -378,7 +378,7 @@ describe("Test performing signing and execution", async () => {
     assert.strictEqual(afterBalance, 1_000_000_000);
   });
 
-  it("should not allow non owner to sign", async () => {
+  it("should not allow non owner to approve", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -419,7 +419,7 @@ describe("Test performing signing and execution", async () => {
     const notAnOwner = Keypair.generate();
 
     try {
-      //Attempt to sign with not an owner
+      //Attempt to approve with not an owner
       await dsl.approveTransaction(
         notAnOwner,
         multisig.address,
