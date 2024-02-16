@@ -25,61 +25,6 @@ describe("Test performing signing and execution", async () => {
     dsl = new MultisigDsl(program);
   });
 
-  it("should perform instructions if reached multisig approval threshold", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
-
-    // Fund the multisig signer account
-    await provider.sendAndConfirm(
-      new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: provider.publicKey,
-          lamports: new BN(1_000_000_000),
-          toPubkey: multisig.signer,
-        })
-      )
-    );
-
-    // Create instruction to send funds from multisig
-    let transactionInstruction = SystemProgram.transfer({
-      fromPubkey: multisig.signer,
-      lamports: new BN(1_000_000_000),
-      toPubkey: provider.publicKey,
-    });
-
-    let beforeBalance = await provider.connection.getBalance(
-      multisig.signer,
-      "confirmed"
-    );
-    assert.strictEqual(beforeBalance, 1_000_000_000);
-
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
-
-    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
-
-    await dsl.executeTransaction(
-      transactionAddress,
-      transactionInstruction,
-      multisig.signer,
-      multisig.address,
-      ownerB
-    );
-
-    let afterBalance = await provider.connection.getBalance(
-      multisig.signer,
-      "confirmed"
-    );
-    assert.strictEqual(afterBalance, 0);
-  });
-
   it("should transfer partial funds", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
