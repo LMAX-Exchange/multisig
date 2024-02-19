@@ -339,15 +339,6 @@ describe("Test changing multisig threshold", async () => {
       threshold
     );
 
-    const newOwnerA = Keypair.generate();
-    const newOwnerB = Keypair.generate();
-    const newOwnerC = Keypair.generate();
-    const newOwners = [
-      newOwnerA.publicKey,
-      newOwnerB.publicKey,
-      newOwnerC.publicKey,
-    ];
-
     try {
       // Attempt to change the multisig threshold
       await program.methods

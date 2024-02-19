@@ -5,13 +5,11 @@ import {
   Keypair,
   PublicKey,
   SystemProgram,
-  Transaction,
 } from "@solana/web3.js";
 import { MultisigAccount, MultisigDsl } from "./utils/multisigDsl";
 import { describe } from "mocha";
 import { ChildProcess } from "node:child_process";
 import { fail } from "node:assert";
-import { cat } from "shelljs";
 
 describe("Test changing multisig owner and threshold atomically", async () => {
   let provider: AnchorProvider;
