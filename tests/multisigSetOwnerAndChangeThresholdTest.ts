@@ -60,13 +60,7 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
-    await dsl.executeTransaction(
-      transactionAddress,
-      transactionInstruction,
-      multisig.signer,
-      multisig.address,
-      ownerB
-    );
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
     assert.strictEqual(actualMultisig.nonce, multisig.nonce);
@@ -119,13 +113,7 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
-    await dsl.executeTransaction(
-      transactionAddress,
-      transactionInstruction,
-      multisig.signer,
-      multisig.address,
-      ownerB
-    );
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     let transactionInstruction2 = await program.methods
       .setOwners(owners)
@@ -181,13 +169,7 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
-    await dsl.executeTransaction(
-      transactionAddress,
-      transactionInstruction,
-      multisig.signer,
-      multisig.address,
-      ownerB
-    );
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     let transactionInstruction2 = await program.methods
       .setOwners(owners)
@@ -258,13 +240,7 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction2, multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
-    await dsl.executeTransaction(
-      transactionAddress,
-      transactionInstruction,
-      multisig.signer,
-      multisig.address,
-      ownerB
-    );
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     let transactionAccount = await program.account.transaction.fetch(
       transactionAddress2
@@ -341,13 +317,7 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction2, multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
-    await dsl.executeTransaction(
-      transactionAddress,
-      transactionInstruction,
-      multisig.signer,
-      multisig.address,
-      ownerB
-    );
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     let transactionAccount = await program.account.transaction.fetch(
       transactionAddress2
@@ -366,13 +336,7 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     );
 
     try {
-      await dsl.executeTransaction(
-        transactionAddress2,
-        transactionInstruction2,
-        multisig.signer,
-        multisig.address,
-        ownerB
-      );
+      await dsl.executeTransaction(transactionAddress2, transactionInstruction2, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("Should have failed to execute transaction");
     } catch (e) {
       assert.ok(
@@ -468,13 +432,7 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
     try {
-      await dsl.executeTransaction(
-        transactionAddress,
-        transactionInstruction,
-        multisig.signer,
-        multisig.address,
-        ownerB
-      );
+      await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("Should have not executed transaction");
     } catch (e) {
       assert.ok(
@@ -516,13 +474,7 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
     try {
-      await dsl.executeTransaction(
-        transactionAddress,
-        transactionInstruction,
-        multisig.signer,
-        multisig.address,
-        ownerB
-      );
+      await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("Should have not executed transaction");
     } catch (e) {
       assert.ok(

@@ -170,6 +170,11 @@ pub mod coral_multisig {
         // Burn the transaction to ensure one time use.
         ctx.accounts.transaction.did_execute = true;
 
+        // reclaim Sol back to payer (and close transaction account)
+        if close_transaction(&ctx.accounts.transaction.to_account_info(), &ctx.accounts.refundee).is_err() {
+            return Err(ErrorCode::AccountCloseFailed.into());
+        }
+
         Ok(())
     }
 }
@@ -242,6 +247,9 @@ pub struct ExecuteTransaction<'info> {
     multisig_signer: UncheckedAccount<'info>,
     #[account(mut, has_one = multisig)]
     transaction: Box<Account<'info, Transaction>>,
+    /// CHECK: success can be any address where rent exempt funds are sent
+    #[account(mut)]
+    refundee:  AccountInfo<'info>,
     executor: Signer<'info>,
 }
 
@@ -340,6 +348,14 @@ fn execute_change_threshold(multisig: &mut Multisig, threshold: u64) -> Result<(
     Ok(())
 }
 
+fn close_transaction(tx: &AccountInfo, recipient: &AccountInfo) -> Result<()> {
+    let mut tx_balance = tx.try_borrow_mut_lamports()?;
+    let mut recipient_balance = recipient.try_borrow_mut_lamports()?;
+    **recipient_balance = (**recipient_balance).checked_add(**tx_balance).unwrap();
+    **tx_balance = 0;
+    Ok(())
+}
+
 #[error_code]
 pub enum ErrorCode {
     #[msg("The given owner is not part of this multisig.")]
@@ -362,6 +378,8 @@ pub enum ErrorCode {
     UniqueOwners,
     #[msg("Executor is not a multisig owner")]
     InvalidExecutor,
+    #[msg("Failed to close transaction account and refund rent-exemption SOL")]
+    AccountCloseFailed,
 }
 
 #[macro_export]

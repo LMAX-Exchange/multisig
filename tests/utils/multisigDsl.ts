@@ -84,15 +84,16 @@ export class MultisigDsl {
     ix: TransactionInstruction,
     multisigSigner: PublicKey,
     multisigAddress: PublicKey,
-    executor: Keypair
-  ) {
+    executor: Keypair,
+    refundee: PublicKey) {
     await this.program.methods
       .executeTransaction()
       .accounts({
         multisig: multisigAddress,
         multisigSigner,
         transaction: tx,
-        executor: executor.publicKey
+        executor: executor.publicKey,
+        refundee: refundee
       })
       .remainingAccounts(
         ix.keys

@@ -45,13 +45,7 @@ describe("Test changing multisig threshold", async () => {
     const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
-    await dsl.executeTransaction(
-      transactionAddress,
-      transactionInstruction,
-      multisig.signer,
-      multisig.address,
-      ownerB
-    );
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
     assert.strictEqual(actualMultisig.nonce, multisig.nonce);
@@ -94,13 +88,7 @@ describe("Test changing multisig threshold", async () => {
     const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
-    await dsl.executeTransaction(
-      transactionAddress,
-      transactionInstruction,
-      multisig.signer,
-      multisig.address,
-      ownerB
-    );
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     let transactionInstruction2 = await program.methods
       .changeThreshold(threshold)
@@ -115,13 +103,7 @@ describe("Test changing multisig threshold", async () => {
 
     // Fail when trying to execute with the old threshold
     try {
-      await dsl.executeTransaction(
-        transactionAddress2,
-        transactionInstruction2,
-        multisig.signer,
-        multisig.address,
-        ownerB
-      );
+      await dsl.executeTransaction(transactionAddress2, transactionInstruction2, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("Should have failed to execute transaction");
     } catch (e) {
       assert.ok(
@@ -133,13 +115,7 @@ describe("Test changing multisig threshold", async () => {
 
     await dsl.approveTransaction(ownerC, multisig.address, transactionAddress2);
     //Succeed when reaching the new threshold
-    await dsl.executeTransaction(
-      transactionAddress2,
-      transactionInstruction2,
-      multisig.signer,
-      multisig.address,
-      ownerB
-    );
+    await dsl.executeTransaction(transactionAddress2, transactionInstruction2, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
     assert.ok(
@@ -178,12 +154,7 @@ describe("Test changing multisig threshold", async () => {
 
     // so we have 2 approvals
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
-    await dsl.executeTransaction(
-        transactionAddress,
-        transactionInstruction,
-        multisig.signer,
-        multisig.address,
-        ownerB);
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     //The already existing transaction has now been executed and should update the threshold to 1
     let actualUpdatedThreshold = (await program.account.multisig.fetch(multisig.address)).threshold;
@@ -235,26 +206,14 @@ describe("Test changing multisig threshold", async () => {
     assert.ok(threshold.eq(actualThreshold2), "Should have original threshold " + threshold + " but was " + actualThreshold2);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
-    await dsl.executeTransaction(
-      transactionAddress,
-      transactionInstruction,
-      multisig.signer,
-      multisig.address,
-      ownerB
-    );
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     // threshold now updated to 1
     let actualNewerThreshold = (await program.account.multisig.fetch(multisig.address)).threshold;
     assert.ok(newThreshold.eq(actualNewerThreshold), "Should have new threshold " + newThreshold + " but was " + actualNewerThreshold);
 
     //Threshold should now be set to 1 meaning that transaction 2 has met the 1/3 approval required for execution, and does not need a second approval
-    await dsl.executeTransaction(
-      transactionAddress2,
-      transactionInstruction2,
-      multisig.signer,
-      multisig.address,
-      ownerB
-    );
+    await dsl.executeTransaction(transactionAddress2, transactionInstruction2, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     //The second threshold update transaction has now been executed and should update the threshold to 3
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
@@ -288,13 +247,7 @@ describe("Test changing multisig threshold", async () => {
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     try {
-      await dsl.executeTransaction(
-        transactionAddress,
-        transactionInstruction,
-        multisig.signer,
-        multisig.address,
-        ownerB
-      );
+      await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("should have failed to execute transaction");
     } catch (e) {
       assert.ok(
@@ -347,13 +300,7 @@ describe("Test changing multisig threshold", async () => {
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     try {
-      await dsl.executeTransaction(
-        transactionAddress,
-        transactionInstruction,
-        multisig.signer,
-        multisig.address,
-        ownerB
-      );
+      await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("should have failed to execute transaction");
     } catch (e) {
       assert.ok(
@@ -480,13 +427,7 @@ describe("Test changing multisig threshold", async () => {
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
-    await dsl.executeTransaction(
-      transactionAddress,
-      transactionInstruction,
-      multisig.signer,
-      multisig.address,
-      ownerB
-    );
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
     assert.strictEqual(actualMultisig.nonce, multisig.nonce);

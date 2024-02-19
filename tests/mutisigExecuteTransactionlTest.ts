@@ -25,7 +25,7 @@ describe("Test transaction  execution", async () => {
     dsl = new MultisigDsl(program);
   });
 
-  it("should execute transaction by proposer if multisig approval threshold reached", async () => {
+  it("should let proposer execute transaction if multisig approval threshold reached", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -65,13 +65,7 @@ describe("Test transaction  execution", async () => {
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
-    await dsl.executeTransaction(
-      transactionAddress,
-      transactionInstruction,
-      multisig.signer,
-      multisig.address,
-        ownerA
-    );
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerA, ownerA.publicKey);
 
     let afterBalance = await provider.connection.getBalance(
       multisig.signer,
@@ -81,7 +75,7 @@ describe("Test transaction  execution", async () => {
   }).timeout(5000);
 
 
-  it("should execute transaction by any owner if multisig approval threshold reached", async () => {
+  it("should let owner who has approved execute transaction if multisig approval threshold reached", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -121,13 +115,7 @@ describe("Test transaction  execution", async () => {
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
-    await dsl.executeTransaction(
-        transactionAddress,
-        transactionInstruction,
-        multisig.signer,
-        multisig.address,
-        ownerB
-    );
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     let afterBalance = await provider.connection.getBalance(
         multisig.signer,
@@ -137,7 +125,7 @@ describe("Test transaction  execution", async () => {
   }).timeout(5000);
 
 
-  it("should execute transaction by any owner (even those who have not approved) if multisig approval threshold reached", async () => {
+  it("should let owner who has not approved execute transaction if multisig approval threshold reached", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -177,13 +165,7 @@ describe("Test transaction  execution", async () => {
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
-    await dsl.executeTransaction(
-        transactionAddress,
-        transactionInstruction,
-        multisig.signer,
-        multisig.address,
-        ownerC
-    );
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerC, ownerA.publicKey);
 
     let afterBalance = await provider.connection.getBalance(
         multisig.signer,
@@ -191,6 +173,113 @@ describe("Test transaction  execution", async () => {
     );
     assert.strictEqual(afterBalance, 0);
   }).timeout(5000);
+
+
+  it("should close transaction account and refund rent exemption SOL on execute transaction", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      threshold
+    );
+
+    // Fund the multisig signer account
+    await provider.sendAndConfirm(
+      new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: provider.publicKey,
+          lamports: new BN(1_000_000_000),
+          toPubkey: multisig.signer,
+        })
+      )
+    );
+
+    // Create instruction to send funds from multisig
+    let transactionInstruction = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(1_000_000_000),
+      toPubkey: provider.publicKey,
+    });
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+
+    let beforeBalance = await provider.connection.getBalance(
+      ownerA.publicKey,
+      "confirmed"
+    );
+    assert.strictEqual(beforeBalance, 0);
+
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
+
+    let afterBalance = await provider.connection.getBalance(
+      ownerA.publicKey,
+      "confirmed"
+    );
+    assert.strictEqual(afterBalance, 2_088_000); // this is the rent exemption amount
+
+    let transactionActInfo = await provider.connection.getAccountInfo(
+      transactionAddress,
+      "confirmed"
+    );
+    assert.strictEqual(transactionActInfo, null);
+  }).timeout(5000);
+
+  it("should refund rent exemption SOL to any nominated account", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const otherAccount = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      threshold
+    );
+
+    // Fund the multisig signer account
+    await provider.sendAndConfirm(
+      new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: provider.publicKey,
+          lamports: new BN(1_000_000_000),
+          toPubkey: multisig.signer,
+        })
+      )
+    );
+
+    // Create instruction to send funds from multisig
+    let transactionInstruction = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(1_000_000_000),
+      toPubkey: provider.publicKey,
+    });
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+
+    let beforeBalance = await provider.connection.getBalance(
+      otherAccount.publicKey,
+      "confirmed"
+    );
+    assert.strictEqual(beforeBalance, 0);
+
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, otherAccount.publicKey);
+
+    let afterBalance = await provider.connection.getBalance(
+      otherAccount.publicKey,
+      "confirmed"
+    );
+    assert.strictEqual(afterBalance, 2_088_000); // this is the rent exemption amount
+  }).timeout(5000);
+
 
 
   it("should not execute transaction twice", async () => {
@@ -233,30 +322,18 @@ describe("Test transaction  execution", async () => {
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
-    await dsl.executeTransaction(
-        transactionAddress,
-        transactionInstruction,
-        multisig.signer,
-        multisig.address,
-        ownerB
-    );
+    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     let afterBalance = await provider.connection.getBalance(multisig.signer, "confirmed");
     assert.strictEqual(afterBalance, 0);
 
     try {
-      await dsl.executeTransaction(
-          transactionAddress,
-          transactionInstruction,
-          multisig.signer,
-          multisig.address,
-          ownerA
-      );
+      await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerA, ownerA.publicKey);
       fail("Should have failed to execute transaction");
     } catch (e) {
       assert.ok(
           e.message.includes(
-              "Error Code: AlreadyExecuted. Error Number: 6006. Error Message: The given transaction has already been executed"
+              "Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized"
           )
       );
     }
@@ -264,7 +341,7 @@ describe("Test transaction  execution", async () => {
   }).timeout(5000);
 
 
-  it("should not execute transaction by non owner", async () => {
+  it("should not let a non-owner execute transaction", async () => {
     const ownerA = Keypair.generate();
     const ownerB = Keypair.generate();
     const ownerC = Keypair.generate();
@@ -306,13 +383,7 @@ describe("Test transaction  execution", async () => {
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
     try {
-      await dsl.executeTransaction(
-          transactionAddress,
-          transactionInstruction,
-          multisig.signer,
-          multisig.address,
-          ownerD
-      );
+      await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerD, ownerA.publicKey);
       fail("Should have failed to execute transaction");
     } catch (e) {
       assert.ok(
