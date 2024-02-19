@@ -280,7 +280,58 @@ describe("Test transaction  execution", async () => {
     assert.strictEqual(afterBalance, 2_088_000); // this is the rent exemption amount
   }).timeout(5000);
 
+  it("should not clear up transaction account if execute fails", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const threshold = new BN(2);
 
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      threshold
+    );
+
+    // Fund the multisig signer account
+    await provider.sendAndConfirm(
+      new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: provider.publicKey,
+          lamports: new BN(1_000_000_000),
+          toPubkey: multisig.signer,
+        })
+      )
+    );
+
+    // Create instruction to send funds from multisig
+    let transactionInstruction = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(5_000_000_000),
+      toPubkey: provider.publicKey,
+    });
+    
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    let transactionAccount = await program.account.transaction.fetch(transactionAddress);
+
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+
+    try {
+      await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
+      fail("The executeTransaction function should have failed");
+    } catch (e) {
+
+      assert.ok(
+        !transactionAccount.didExecute,
+        "Transaction should not have been executed"
+      );
+
+      let transactionActInfo = await provider.connection.getAccountInfo(
+        transactionAddress,
+        "confirmed"
+      );
+      assert.notEqual(transactionActInfo, null);
+    }
+  }).timeout(5000);
 
   it("should not execute transaction twice", async () => {
     const ownerA = Keypair.generate();
