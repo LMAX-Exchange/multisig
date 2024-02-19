@@ -12,7 +12,7 @@ import { describe } from "mocha";
 import { ChildProcess } from "node:child_process";
 import { fail } from "node:assert";
 
-describe("Test transaction  execution", async () => {
+describe("Test transaction execution", async () => {
   let provider: AnchorProvider;
   let program: Program;
   let validatorProcess: ChildProcess;

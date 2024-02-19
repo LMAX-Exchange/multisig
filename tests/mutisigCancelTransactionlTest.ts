@@ -1,0 +1,231 @@
+import assert = require("assert");
+import { setUpValidator } from "./utils/before";
+import { AnchorProvider, BN, Program } from "@coral-xyz/anchor";
+import {
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+} from "@solana/web3.js";
+import { MultisigAccount, MultisigDsl } from "./utils/multisigDsl";
+import { describe } from "mocha";
+import { ChildProcess } from "node:child_process";
+import { fail } from "node:assert";
+
+describe("Test transaction cancelation", async () => {
+  let provider: AnchorProvider;
+  let program: Program;
+  let validatorProcess: ChildProcess;
+  let dsl: MultisigDsl;
+  before(async () => {
+    let result = await setUpValidator(false);
+    program = result.program;
+    provider = result.provider;
+    validatorProcess = result.validatorProcess;
+    dsl = new MultisigDsl(program);
+  });
+
+  it("should let owner cancel transaction", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      threshold
+    );
+
+    // Create instruction to send funds from multisig
+    let transactionInstruction = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(1_000_000_000),
+      toPubkey: provider.publicKey,
+    });
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+
+    let beforeBalance = await provider.connection.getBalance(
+      ownerA.publicKey,
+      "confirmed"
+    );
+    assert.strictEqual(beforeBalance, 0);
+
+    await dsl.cancelTransaction(transactionAddress, multisig.address, ownerB, ownerA.publicKey);
+
+    let afterBalance = await provider.connection.getBalance(
+      ownerA.publicKey,
+      "confirmed"
+    );
+    assert.strictEqual(afterBalance, 2_088_000); // this is the rent exemption amount
+
+    let transactionActInfo = await provider.connection.getAccountInfo(
+      transactionAddress,
+      "confirmed"
+    );
+    assert.strictEqual(transactionActInfo, null);
+  }).timeout(5000);
+
+  it("should not let a non-owner cancel transaction", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const ownerD = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      threshold
+    );
+
+    // Create instruction to send funds from multisig
+    let transactionInstruction = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(1_000_000_000),
+      toPubkey: provider.publicKey,
+    });
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+
+    try {
+      await dsl.cancelTransaction(transactionAddress, multisig.address, ownerD, ownerA.publicKey);
+      fail("Should have failed to cancel transaction");
+    } catch (e) {
+      assert.ok(
+        e.message.includes(
+          "Error Code: InvalidExecutor. Error Number: 6009. Error Message: Executor is not a multisig owner"
+        )
+      );
+    }
+
+    let transactionActInfo = await provider.connection.getAccountInfo(
+      transactionAddress,
+      "confirmed"
+    );
+    assert.notEqual(transactionActInfo, null);
+  }).timeout(5000);
+
+  it("should not execute transaction after cancel", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      threshold
+    );
+
+    // Create instruction to send funds from multisig
+    let transactionInstruction = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(1_000_000_000),
+      toPubkey: provider.publicKey,
+    });
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+
+    await dsl.cancelTransaction(transactionAddress, multisig.address, ownerB, ownerA.publicKey);
+
+    try {
+      await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerA, ownerA.publicKey);
+      fail("Should have failed to execute transaction");
+    } catch (e) {
+      assert.ok(
+        e.message.includes(
+          "Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized"
+        )
+      );
+    }
+  }).timeout(5000);
+
+  it("should not approve transaction after cancel", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      threshold
+    );
+
+    // Create instruction to send funds from multisig
+    let transactionInstruction = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(1_000_000_000),
+      toPubkey: provider.publicKey,
+    });
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+
+    await dsl.cancelTransaction(transactionAddress, multisig.address, ownerB, ownerA.publicKey);
+
+    try {
+      await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+      fail("Should have failed to approve transaction");
+    } catch (e) {
+      assert.ok(
+        e.message.includes(
+          "Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized"
+        )
+      );
+    }
+  }).timeout(5000);
+
+  it("should approve transaction after previous canceled", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const recipient = Keypair.generate();
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(
+      owners,
+      threshold
+    );
+
+    // Fund the multisig signer account
+    await provider.sendAndConfirm(
+      new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: provider.publicKey,
+          lamports: new BN(1_000_000_000),
+          toPubkey: multisig.signer,
+        })
+      )
+    );
+
+    // Create instruction to send funds from multisig
+    let transactionInstruction = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(1_000_000_000),
+      toPubkey: recipient.publicKey,
+    });
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+
+    await dsl.cancelTransaction(transactionAddress, multisig.address, ownerB, ownerA.publicKey);
+
+    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress2);
+
+    await dsl.executeTransaction(transactionAddress2, transactionInstruction, multisig.signer, multisig.address, ownerA, ownerA.publicKey);
+
+    let afterBalance = await provider.connection.getBalance(
+      recipient.publicKey,
+      "confirmed"
+    );
+    assert.strictEqual(afterBalance, 1_000_000_000);
+
+
+  }).timeout(5000);
+});

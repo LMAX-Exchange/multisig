@@ -112,4 +112,21 @@ export class MultisigDsl {
       .signers([executor])
       .rpc();
   }
+
+  async cancelTransaction(
+    tx: PublicKey,
+    multisigAddress: PublicKey,
+    executor: Keypair,
+    refundee: PublicKey) {
+    await this.program.methods
+      .cancelTransaction()
+      .accounts({
+        multisig: multisigAddress,
+        transaction: tx,
+        executor: executor.publicKey,
+        refundee: refundee
+      })
+      .signers([executor])
+      .rpc();
+  }
 }

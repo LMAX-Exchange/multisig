@@ -177,6 +177,20 @@ pub mod coral_multisig {
 
         Ok(())
     }
+
+    // Cancel the given transaction regardless of signatures.
+    pub fn cancel_transaction(ctx: Context<CancelTransaction>) -> Result<()> {
+        if !ctx.accounts.multisig.owners.contains(ctx.accounts.executor.key) {
+            return Err(ErrorCode::InvalidExecutor.into());
+        }
+
+        // reclaim Sol back to payer (and close transaction account)
+        if close_transaction(&ctx.accounts.transaction.to_account_info(), &ctx.accounts.refundee).is_err() {
+            return Err(ErrorCode::AccountCloseFailed.into());
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -245,6 +259,18 @@ pub struct ExecuteTransaction<'info> {
         bump = multisig.nonce,
     )]
     multisig_signer: UncheckedAccount<'info>,
+    #[account(mut, has_one = multisig)]
+    transaction: Box<Account<'info, Transaction>>,
+    /// CHECK: success can be any address where rent exempt funds are sent
+    #[account(mut)]
+    refundee:  AccountInfo<'info>,
+    executor: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct CancelTransaction<'info> {
+    #[account(constraint = multisig.owner_set_seqno == transaction.owner_set_seqno)]
+    multisig: Box<Account<'info, Multisig>>,
     #[account(mut, has_one = multisig)]
     transaction: Box<Account<'info, Transaction>>,
     /// CHECK: success can be any address where rent exempt funds are sent
