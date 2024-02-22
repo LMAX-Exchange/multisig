@@ -360,16 +360,6 @@ impl From<&TransactionAccount> for AccountMeta {
     }
 }
 
-impl From<&AccountMeta> for TransactionAccount {
-    fn from(account_meta: &AccountMeta) -> TransactionAccount {
-        TransactionAccount {
-            pubkey: account_meta.pubkey,
-            is_signer: account_meta.is_signer,
-            is_writable: account_meta.is_writable,
-        }
-    }
-}
-
 fn assert_unique_owners(owners: &[Pubkey]) -> Result<()> {
     for (i, owner) in owners.iter().enumerate() {
         require!(
