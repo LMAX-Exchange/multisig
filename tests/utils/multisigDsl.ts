@@ -45,17 +45,19 @@ export class MultisigDsl {
 
   async proposeTransaction(
     proposer: Keypair,
-    ix: TransactionInstruction,
+    instructions: Array<TransactionInstruction>,
     multisig: PublicKey
   ) {
     const transactionAccount = Keypair.generate();
-
+    let smartContractInstructions = instructions.map(ix => {
+      return { programId: ix.programId, accounts: ix.keys, data: ix.data };
+    });
     await this.program.methods
-      .createTransaction(ix.programId, ix.keys, ix.data)
+      .createTransaction(smartContractInstructions)
       .accounts({
-        multisig: multisig,
-        transaction: transactionAccount.publicKey,
-        proposer: proposer.publicKey,
+          multisig: multisig,
+          transaction: transactionAccount.publicKey,
+          proposer: proposer.publicKey,
       })
       .signers([proposer, transactionAccount])
       .rpc();

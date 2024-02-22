@@ -5,7 +5,6 @@ import {
   Keypair,
   PublicKey,
   SystemProgram,
-  Transaction,
 } from "@solana/web3.js";
 import { MultisigAccount, MultisigDsl } from "./utils/multisigDsl";
 import { describe } from "mocha";
@@ -44,7 +43,7 @@ describe("Test transaction accounts", async () => {
       toPubkey: provider.publicKey,
     });
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     let transactionAccount = await program.account.transaction.fetch(transactionAddress);
 
@@ -62,17 +61,17 @@ describe("Test transaction accounts", async () => {
       "Transaction should not have been executed"
     );
     assert.deepStrictEqual(
-      transactionAccount.programId,
+      transactionAccount.instructions[0].programId,
       transactionInstruction.programId,
       "Transaction program should match instruction"
     );
     assert.deepStrictEqual(
-      transactionAccount.data,
+      transactionAccount.instructions[0].data,
       transactionInstruction.data,
       "Transaction data should match instruction"
     );
     assert.deepStrictEqual(
-      transactionAccount.accounts,
+      transactionAccount.instructions[0].accounts,
       transactionInstruction.keys,
       "Transaction keys should match instruction"
     );
@@ -97,7 +96,7 @@ describe("Test transaction accounts", async () => {
       toPubkey: provider.publicKey,
     });
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     await dsl.approveTransaction(ownerC, multisig.address, transactionAddress);
 
@@ -119,17 +118,17 @@ describe("Test transaction accounts", async () => {
       "Transaction should not have been executed"
     );
     assert.deepStrictEqual(
-      transactionAccount.programId,
+      transactionAccount.instructions[0].programId,
       transactionInstruction.programId,
       "Transaction program should match instruction"
     );
     assert.deepStrictEqual(
-      transactionAccount.data,
+      transactionAccount.instructions[0].data,
       transactionInstruction.data,
       "Transaction data should match instruction"
     );
     assert.deepStrictEqual(
-      transactionAccount.accounts,
+      transactionAccount.instructions[0].accounts,
       transactionInstruction.keys,
       "Transaction keys should match instruction"
     );
@@ -156,7 +155,7 @@ describe("Test transaction accounts", async () => {
     });
 
     try {
-      await dsl.proposeTransaction(notAnOwner, transactionInstruction, multisig.address);
+      await dsl.proposeTransaction(notAnOwner, [transactionInstruction], multisig.address);
       fail("Should have failed to propose transaction");
     } catch (e) {
       assert.ok(

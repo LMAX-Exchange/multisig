@@ -44,7 +44,7 @@ describe("Test transaction cancelation", async () => {
       toPubkey: provider.publicKey,
     });
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     let beforeBalance = await provider.connection.getBalance(
       ownerA.publicKey,
@@ -58,7 +58,7 @@ describe("Test transaction cancelation", async () => {
       ownerA.publicKey,
       "confirmed"
     );
-    assert.strictEqual(afterBalance, 2_088_000); // this is the rent exemption amount
+    assert.strictEqual(afterBalance, 2_115_840); // this is the rent exemption amount
 
     let transactionActInfo = await provider.connection.getAccountInfo(
       transactionAddress,
@@ -87,7 +87,7 @@ describe("Test transaction cancelation", async () => {
       toPubkey: provider.publicKey,
     });
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     try {
       await dsl.cancelTransaction(transactionAddress, multisig.address, ownerD, ownerA.publicKey);
@@ -126,7 +126,7 @@ describe("Test transaction cancelation", async () => {
       toPubkey: provider.publicKey,
     });
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
@@ -163,7 +163,7 @@ describe("Test transaction cancelation", async () => {
       toPubkey: provider.publicKey,
     });
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     await dsl.cancelTransaction(transactionAddress, multisig.address, ownerB, ownerA.publicKey);
 
@@ -210,11 +210,11 @@ describe("Test transaction cancelation", async () => {
       toPubkey: recipient.publicKey,
     });
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     await dsl.cancelTransaction(transactionAddress, multisig.address, ownerB, ownerA.publicKey);
 
-    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress2);
 

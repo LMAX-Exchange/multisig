@@ -21,9 +21,32 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program;
 use anchor_lang::solana_program::instruction::Instruction;
 use std::convert::Into;
-use std::ops::Deref;
+
 
 const ANCHOR_ACCT_DESCRIM_SIZE: usize = 8;
+const VEC_SIZE: usize = 4;
+const PUBKEY_SIZE: usize = 32;
+
+#[macro_export]
+macro_rules! vec_len {
+    ( $elem_size:expr, $elem_count:expr ) => {
+        {
+            $elem_size * $elem_count + VEC_SIZE
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! instructions_len {
+    ( $instructions: expr) => {
+        {
+            $instructions.iter().map(|ix| {
+                PUBKEY_SIZE + vec_len!(PUBKEY_SIZE + 1 + 1, ix.accounts.len()) + vec_len!(1, ix.data.len())
+            })
+            .sum::<usize>() + VEC_SIZE
+        }
+    };
+}
 
 declare_id!("msigUdDBsR4zSUYqYEDrc1LcgtmuSDDM7KxpRUXNC6U");
 
@@ -57,9 +80,7 @@ pub mod coral_multisig {
     // which must be one of the owners of the multisig.
     pub fn create_transaction(
         ctx: Context<CreateTransaction>,
-        pid: Pubkey,
-        accs: Vec<TransactionAccount>,
-        data: Vec<u8>,
+        instructions: Vec<TransactionInstruction>,
     ) -> Result<()> {
         let owner_index = ctx
             .accounts
@@ -74,9 +95,7 @@ pub mod coral_multisig {
         signers[owner_index] = true;
 
         let tx = &mut ctx.accounts.transaction;
-        tx.program_id = pid;
-        tx.accounts = accs;
-        tx.data = data;
+        tx.instructions = instructions;
         tx.signers = signers;
         tx.multisig = ctx.accounts.multisig.key();
         tx.did_execute = false;
@@ -148,24 +167,28 @@ pub mod coral_multisig {
             return Err(ErrorCode::NotEnoughSigners.into());
         }
 
-        // Execute the transaction signed by the multisig.
-        let mut ix: Instruction = (*ctx.accounts.transaction).deref().into();
-        ix.accounts = ix
-            .accounts
-            .iter()
-            .map(|acc| {
-                let mut acc = acc.clone();
-                if &acc.pubkey == ctx.accounts.multisig_signer.key {
-                    acc.is_signer = true;
-                }
-                acc
-            })
-            .collect();
         let multisig_key = ctx.accounts.multisig.key();
         let seeds = &[multisig_key.as_ref(), &[ctx.accounts.multisig.nonce]];
         let signer = &[&seeds[..]];
         let accounts = ctx.remaining_accounts;
-        solana_program::program::invoke_signed(&ix, accounts, signer)?;
+
+        // Execute the transaction signed by the multisig.
+        ctx.accounts.transaction.instructions.iter()
+            .map(|ix| {
+                let mut ix: Instruction = ix.into();
+                ix.accounts = ix.accounts.iter()
+                    .map(|acc| {
+                        let mut acc = acc.clone();
+                        if &acc.pubkey == ctx.accounts.multisig_signer.key {
+                            acc.is_signer = true;
+                        }
+                        acc
+                    })
+                    .collect();
+                solana_program::program::invoke_signed(&ix, accounts, signer)
+            })
+            // Collect will process Result objects from the invoke_signed until it finds an error, when it will return that error
+            .collect::<std::result::Result<Vec<_>, _>>()?;
 
         // Burn the transaction to ensure one time use.
         ctx.accounts.transaction.did_execute = true;
@@ -199,7 +222,7 @@ pub struct CreateMultisig<'info> {
     // see https://book.anchor-lang.com/anchor_references/space.html
     #[account(
         init,
-        space = ANCHOR_ACCT_DESCRIM_SIZE + vec_len!(32, owners.len()) + 8 + 1 + 4,
+        space = ANCHOR_ACCT_DESCRIM_SIZE + vec_len!(PUBKEY_SIZE, owners.len()) + 8 + 1 + 4,
         payer = payer,
         signer
     )]
@@ -210,13 +233,13 @@ pub struct CreateMultisig<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(pid: Pubkey, accs: Vec<TransactionAccount>, data: Vec<u8>)]
+#[instruction(instructions: Vec<TransactionInstruction>)]
 pub struct CreateTransaction<'info> {
     multisig: Box<Account<'info, Multisig>>,
     // see https://book.anchor-lang.com/anchor_references/space.html
     #[account(
         init,
-        space = ANCHOR_ACCT_DESCRIM_SIZE + 32 + 32 + vec_len!(34, accs.len()) + vec_len!(1, data.len()) + vec_len!(1, multisig.owners.len()) + 1 + 4,
+        space = ANCHOR_ACCT_DESCRIM_SIZE + PUBKEY_SIZE + instructions_len!(instructions) + vec_len!(1, multisig.owners.len()) + 1 + 4,
         payer = payer,
         signer
     )]
@@ -291,12 +314,8 @@ pub struct Multisig {
 pub struct Transaction {
     // The multisig account this transaction belongs to.
     pub multisig: Pubkey,
-    // Target program to execute against.
-    pub program_id: Pubkey,
-    // Accounts requried for the transaction.
-    pub accounts: Vec<TransactionAccount>,
-    // Instruction data for the transaction.
-    pub data: Vec<u8>,
+    // The instructions to be executed by this transaction
+    pub instructions: Vec<TransactionInstruction>,
     // signers[index] is true iff multisig.owners[index] signed the transaction.
     pub signers: Vec<bool>,
     // Boolean ensuring one time execution.
@@ -305,12 +324,22 @@ pub struct Transaction {
     pub owner_set_seqno: u32,
 }
 
-impl From<&Transaction> for Instruction {
-    fn from(tx: &Transaction) -> Instruction {
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub struct TransactionInstruction {
+    /// Pubkey of the program that executes this instruction.
+    pub program_id: Pubkey,
+    /// Metadata describing accounts that should be passed to the program.
+    pub accounts: Vec<TransactionAccount>,
+    /// Opaque data passed to the program for its own interpretation.
+    pub data: Vec<u8>,
+}
+
+impl From<&TransactionInstruction> for Instruction {
+    fn from(ix: &TransactionInstruction) -> Instruction {
         Instruction {
-            program_id: tx.program_id,
-            accounts: tx.accounts.iter().map(Into::into).collect(),
-            data: tx.data.clone(),
+            program_id: ix.program_id,
+            accounts: ix.accounts.iter().map(Into::into).collect(),
+            data: ix.data.clone(),
         }
     }
 }
@@ -406,13 +435,4 @@ pub enum ErrorCode {
     InvalidExecutor,
     #[msg("Failed to close transaction account and refund rent-exemption SOL")]
     AccountCloseFailed,
-}
-
-#[macro_export]
-macro_rules! vec_len {
-    ( $elem_size:expr, $elem_count:expr ) => {
-        {
-            $elem_size * $elem_count + 4
-        }
-    };
 }

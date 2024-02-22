@@ -61,7 +61,7 @@ describe("Test performing signing and execution", async () => {
     );
     assert.strictEqual(beforeBalance, 1_000_000_000);
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
@@ -104,7 +104,7 @@ describe("Test performing signing and execution", async () => {
     let beforeBalance = await provider.connection.getBalance(multisig.signer, "confirmed");
     assert.strictEqual(beforeBalance, 1_000_000_000);
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
@@ -153,9 +153,9 @@ describe("Test performing signing and execution", async () => {
     );
     assert.strictEqual(beforeBalance, 2_000_000_000);
 
-    const transactionAddress1: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress1: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
-    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress1);
 
@@ -208,7 +208,7 @@ describe("Test performing signing and execution", async () => {
     );
     assert.strictEqual(beforeBalance, 1_000_000_000);
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     try {
       await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
@@ -263,7 +263,7 @@ describe("Test performing signing and execution", async () => {
     );
     assert.strictEqual(beforeBalance, 1_000_000_000);
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     // Approve twice with the same owner
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
@@ -314,7 +314,7 @@ describe("Test performing signing and execution", async () => {
     );
     assert.strictEqual(beforeBalance, 1_000_000_000);
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     //Approve again with the same owner meaning still only 1/3 approval
     await dsl.approveTransaction(ownerA, multisig.address, transactionAddress);
@@ -372,7 +372,7 @@ describe("Test performing signing and execution", async () => {
     );
     assert.strictEqual(beforeBalance, 1_000_000_000);
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     const notAnOwner = Keypair.generate();
 
@@ -448,8 +448,8 @@ describe("Test performing signing and execution", async () => {
     let beforeBalance2 = await provider.connection.getBalance(multisig2.signer, "confirmed");
     assert.strictEqual(beforeBalance2, 500_000_000);
 
-    const transactionAddress1: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction1, multisig1.address);
-    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerB, transactionInstruction2, multisig2.address);
+    const transactionAddress1: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction1], multisig1.address);
+    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerB, [transactionInstruction2], multisig2.address);
 
     await dsl.approveTransaction(ownerB, multisig1.address, transactionAddress1);
     await dsl.approveTransaction(ownerC, multisig2.address, transactionAddress2);

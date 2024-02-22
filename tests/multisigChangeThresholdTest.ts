@@ -42,7 +42,7 @@ describe("Test changing multisig threshold", async () => {
       })
       .instruction();
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
@@ -85,7 +85,7 @@ describe("Test changing multisig threshold", async () => {
       })
       .instruction();
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
@@ -98,7 +98,7 @@ describe("Test changing multisig threshold", async () => {
       })
       .instruction();
 
-    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction2, multisig.address);
+    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction2], multisig.address);
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress2);
 
     // Fail when trying to execute with the old threshold
@@ -146,7 +146,7 @@ describe("Test changing multisig threshold", async () => {
         })
         .instruction();
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     // actual threshold not updated whilst tx in flight
     let actualNewThreshold = (await program.account.multisig.fetch(multisig.address)).threshold;
@@ -185,7 +185,7 @@ describe("Test changing multisig threshold", async () => {
         })
         .instruction();
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     // actual threshold not updated whilst tx in flight
     let actualThreshold = (await program.account.multisig.fetch(multisig.address)).threshold;
@@ -199,7 +199,7 @@ describe("Test changing multisig threshold", async () => {
       })
       .instruction();
 
-    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction2, multisig.address);
+    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction2], multisig.address);
 
     // actual threshold not updated whilst tx in flight
     let actualThreshold2 = (await program.account.multisig.fetch(multisig.address)).threshold;
@@ -243,7 +243,7 @@ describe("Test changing multisig threshold", async () => {
       })
       .instruction();
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     try {
@@ -296,7 +296,7 @@ describe("Test changing multisig threshold", async () => {
       })
       .instruction();
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     try {
@@ -414,7 +414,7 @@ describe("Test changing multisig threshold", async () => {
       })
       .instruction();
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, transactionInstruction, multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
