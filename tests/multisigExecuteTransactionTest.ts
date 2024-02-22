@@ -49,9 +49,14 @@ describe("Test transaction execution", async () => {
     );
 
     // Create instruction to send funds from multisig
-    let transactionInstruction = SystemProgram.transfer({
+    let instruction1 = SystemProgram.transfer({
       fromPubkey: multisig.signer,
-      lamports: new BN(1_000_000_000),
+      lamports: new BN(600_000_000),
+      toPubkey: provider.publicKey,
+    });
+    let instruction2 = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(400_000_000),
       toPubkey: provider.publicKey,
     });
 
@@ -61,11 +66,11 @@ describe("Test transaction execution", async () => {
     );
     assert.strictEqual(beforeBalance, 1_000_000_000);
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [instruction1, instruction2], multisig.address);
 
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
-    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerA, ownerA.publicKey);
+    await dsl.executeTransactionWithMultipleInstructions(transactionAddress, [instruction1, instruction2], multisig.signer, multisig.address, ownerA, ownerA.publicKey);
 
     let afterBalance = await provider.connection.getBalance(
       multisig.signer,

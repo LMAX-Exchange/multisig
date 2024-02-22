@@ -81,13 +81,32 @@ export class MultisigDsl {
       .rpc();
   }
 
-  async executeTransaction(
+  async executeTransactionWithMultipleInstructions(
     tx: PublicKey,
-    ix: TransactionInstruction,
+    ixs: Array<TransactionInstruction>,
     multisigSigner: PublicKey,
     multisigAddress: PublicKey,
     executor: Keypair,
     refundee: PublicKey) {
+    const accounts = ixs.flatMap(ix =>
+      ix.keys
+        .map((meta) =>
+          meta.pubkey.equals(multisigSigner)
+            ? {...meta, isSigner: false}
+            : meta
+        )
+        .concat({
+          pubkey: ix.programId,
+          isWritable: false,
+          isSigner: false,
+        })
+    );
+    const dedupedAccounts = accounts.filter((value, index) => {
+      const _value = JSON.stringify(value);
+      return index === accounts.findIndex(obj => {
+        return JSON.stringify(obj) === _value;
+      });
+    });
     await this.program.methods
       .executeTransaction()
       .accounts({
@@ -97,22 +116,19 @@ export class MultisigDsl {
         executor: executor.publicKey,
         refundee: refundee
       })
-      .remainingAccounts(
-        ix.keys
-          // Change the signer status on the vendor signer since it's signed by the program, not the client.
-          .map((meta) =>
-            meta.pubkey.equals(multisigSigner)
-              ? { ...meta, isSigner: false }
-              : meta
-          )
-          .concat({
-            pubkey: ix.programId,
-            isWritable: false,
-            isSigner: false,
-          })
-      )
+      .remainingAccounts(dedupedAccounts)
       .signers([executor])
       .rpc();
+  }
+
+  async executeTransaction(
+    tx: PublicKey,
+    ix: TransactionInstruction,
+    multisigSigner: PublicKey,
+    multisigAddress: PublicKey,
+    executor: Keypair,
+    refundee: PublicKey) {
+    await this.executeTransactionWithMultipleInstructions(tx, [ix], multisigSigner, multisigAddress, executor, refundee);
   }
 
   async cancelTransaction(
