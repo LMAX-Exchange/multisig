@@ -1,16 +1,18 @@
 import assert = require("assert");
-import { setUpValidator } from "./utils/before";
-import { AnchorProvider, BN, Program } from "@coral-xyz/anchor";
+import {setUpValidator} from "./utils/before";
+import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
+import {Keypair, PublicKey, SystemProgram, Transaction,} from "@solana/web3.js";
 import {
-  Keypair,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-} from "@solana/web3.js";
-import { MultisigAccount, MultisigDsl } from "./utils/multisigDsl";
-import { describe } from "mocha";
-import { ChildProcess } from "node:child_process";
-import { fail } from "node:assert";
+  createAssociatedTokenAccount,
+  createMint,
+  createTransferCheckedInstruction,
+  getOrCreateAssociatedTokenAccount,
+  mintToChecked
+} from "@solana/spl-token";
+import {MultisigAccount, MultisigDsl} from "./utils/multisigDsl";
+import {describe} from "mocha";
+import {ChildProcess} from "node:child_process";
+import {fail} from "node:assert";
 
 describe("Test transaction execution", async () => {
   let provider: AnchorProvider;
@@ -27,17 +29,11 @@ describe("Test transaction execution", async () => {
   });
 
 
-  it("should let proposer execute transaction if multisig approval threshold reached", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
+  it("should let proposer execute SOL transaction if multisig approval threshold reached", async () => {
+    const [ownerA, ownerB, ownerC] = [ Keypair.generate(), Keypair.generate(), Keypair.generate() ];
     const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
     const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
+    const multisig: MultisigAccount = await dsl.createMultisig(owners, threshold);
 
     // Fund the multisig signer account
     await provider.sendAndConfirm(
@@ -50,37 +46,190 @@ describe("Test transaction execution", async () => {
       )
     );
 
-    // Create instruction to send funds from multisig
-    let instruction1 = SystemProgram.transfer({
+    // Create instruction to send SOL from multisig
+    let solTransferInstruction = SystemProgram.transfer({
       fromPubkey: multisig.signer,
       lamports: new BN(600_000_000),
       toPubkey: provider.publicKey,
     });
-    let instruction2 = SystemProgram.transfer({
+
+    let beforeBalance = await provider.connection.getBalance(multisig.signer, "confirmed");
+    assert.strictEqual(beforeBalance, 1_000_000_000);
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [solTransferInstruction], multisig.address);
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+
+    await dsl.executeTransaction(transactionAddress, solTransferInstruction, multisig.signer, multisig.address, ownerA, ownerA.publicKey);
+
+    let afterBalance = await provider.connection.getBalance(multisig.signer, "confirmed");
+    assert.strictEqual(afterBalance, 400_000_000);
+  }).timeout(5000);
+
+
+  it("should let proposer execute a SPL token transaction if multisig approval threshold reached", async () => {
+    const [ownerA, ownerB, ownerC] = [ Keypair.generate(), Keypair.generate(), Keypair.generate() ];
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const threshold = new BN(2);
+    const multisig: MultisigAccount = await dsl.createMultisig(owners, threshold);
+
+    // Create instruction to send SPL tokens from multisig
+    const mintOwner = Keypair.generate();
+    await provider.sendAndConfirm(  // mintOwner is also the fee payer, need to give it funds
+      new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: provider.publicKey,
+          lamports: new BN(1_000_000_000),
+          toPubkey: mintOwner.publicKey,
+        })
+      )
+    );
+    let mintAccountPublicKey = await createMint(
+      provider.connection,
+      mintOwner,            // signer
+      mintOwner.publicKey,  // mint authority
+      mintOwner.publicKey,  // freeze authority
+      3  // decimals
+    );
+    let multisigOwnedAta = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      mintOwner,             // fee payer
+      mintAccountPublicKey,  // mint
+      multisig.signer,       // owner
+      true  // allowOwnerOffCurve
+    );
+    await mintToChecked(
+      provider.connection,
+      mintOwner,                 // fee payer
+      mintAccountPublicKey,      // mint
+      multisigOwnedAta.address,  // receiver (should be a token account)
+      mintOwner.publicKey,       // mint authority
+      2000,  // amount (2 tokens)
+      3  // decimals
+    );
+    let destinationAta = await createAssociatedTokenAccount(
+      provider.connection,
+      mintOwner,             // fee payer
+      mintAccountPublicKey,  // mint
+      ownerB.publicKey       // owner
+    );
+    let tokenTransferInstruction = createTransferCheckedInstruction(
+      multisigOwnedAta.address,  // from (should be a token account)
+      mintAccountPublicKey,      // mint
+      destinationAta,            // to (should be a token account)
+      multisig.signer,           // from's owner
+      1500,              // amount
+      3                 // decimals
+    );
+
+    let beforeTokenBalance = await provider.connection.getTokenAccountBalance(multisigOwnedAta.address);
+    assert.equal(beforeTokenBalance.value.amount, 2000);
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [tokenTransferInstruction], multisig.address);
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+
+    await dsl.executeTransaction(transactionAddress, tokenTransferInstruction, multisig.signer, multisig.address, ownerA, ownerA.publicKey);
+
+    let afterTokenBalance = await provider.connection.getTokenAccountBalance(multisigOwnedAta.address);
+    assert.equal(afterTokenBalance.value.amount, 500);
+  }).timeout(5000);
+
+
+  it("should let proposer execute a transaction containing a SOL transfer and a SPL token transfer instruction", async () => {
+    const [ownerA, ownerB, ownerC] = [ Keypair.generate(), Keypair.generate(), Keypair.generate() ];
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const threshold = new BN(2);
+    const multisig: MultisigAccount = await dsl.createMultisig(owners, threshold);
+
+    // Fund the multisig signer account
+    await provider.sendAndConfirm(
+      new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: provider.publicKey,
+          lamports: new BN(1_000_000_000),
+          toPubkey: multisig.signer,
+        })
+      )
+    );
+    // Create instruction to send funds from multisig
+    let solTransferInstruction = SystemProgram.transfer({
       fromPubkey: multisig.signer,
-      lamports: new BN(400_000_000),
+      lamports: new BN(600_000_000),
       toPubkey: provider.publicKey,
     });
 
-    let beforeBalance = await provider.connection.getBalance(
-      multisig.signer,
-      "confirmed"
+    // Create instruction to send SPL tokens from multisig
+    const mintOwner = Keypair.generate();
+    await provider.sendAndConfirm(  // mintOwner is also the fee payer, need to give it funds
+      new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: provider.publicKey,
+          lamports: new BN(1_000_000_000),
+          toPubkey: mintOwner.publicKey,
+        })
+      )
     );
-    assert.strictEqual(beforeBalance, 1_000_000_000);
+    let mintAccountPublicKey = await createMint(
+      provider.connection,
+      mintOwner,            // signer
+      mintOwner.publicKey,  // mint authority
+      mintOwner.publicKey,  // freeze authority
+      3  // decimals
+    );
+    let multisigOwnedAta = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      mintOwner,             // fee payer
+      mintAccountPublicKey,  // mint
+      multisig.signer,       // owner
+      true  // allowOwnerOffCurve
+    );
+    await mintToChecked(
+      provider.connection,
+      mintOwner,                 // fee payer
+      mintAccountPublicKey,      // mint
+      multisigOwnedAta.address,  // receiver (should be a token account)
+      mintOwner.publicKey,       // mint authority
+      2000,  // amount (2 tokens)
+      3  // decimals
+    );
+    let destinationAta = await createAssociatedTokenAccount(
+      provider.connection,
+      mintOwner,             // fee payer
+      mintAccountPublicKey,  // mint
+      ownerB.publicKey       // owner
+    );
+    let tokenTransferInstruction = createTransferCheckedInstruction(
+      multisigOwnedAta.address,  // from (should be a token account)
+      mintAccountPublicKey,      // mint
+      destinationAta,            // to (should be a token account)
+      multisig.signer,           // from's owner
+      1500,              // amount
+      3                 // decimals
+    );
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [instruction1, instruction2], multisig.address);
+    let beforeSolBalance = await provider.connection.getBalance(multisig.signer, "confirmed");
+    assert.strictEqual(beforeSolBalance, 1_000_000_000);
 
+    let beforeTokenBalance = await provider.connection.getTokenAccountBalance(multisigOwnedAta.address);
+    assert.equal(beforeTokenBalance.value.amount, 2000);
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [solTransferInstruction, tokenTransferInstruction], multisig.address);
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
-    await dsl.executeTransactionWithMultipleInstructions(transactionAddress, [instruction1, instruction2], multisig.signer, multisig.address, ownerA, ownerA.publicKey);
-
-    let afterBalance = await provider.connection.getBalance(
+    await dsl.executeTransactionWithMultipleInstructions(
+      transactionAddress,
+      [solTransferInstruction, tokenTransferInstruction],
       multisig.signer,
-      "confirmed"
+      multisig.address,
+      ownerA,
+      ownerA.publicKey
     );
-    assert.strictEqual(afterBalance, 0);
-  }).timeout(5000);
 
+    let afterSolBalance = await provider.connection.getBalance(multisig.signer, "confirmed");
+    assert.strictEqual(afterSolBalance, 400_000_000);
+
+    let afterTokenBalance = await provider.connection.getTokenAccountBalance(multisigOwnedAta.address);
+    assert.equal(afterTokenBalance.value.amount, 500);
+  }).timeout(5000);
 
   it("should not execute any instructions if one of the instructions fails", async () => {
     const ownerA = Keypair.generate();

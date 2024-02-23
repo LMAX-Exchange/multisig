@@ -9,6 +9,7 @@
   "devDependencies": {
     "@coral-xyz/anchor": "^0.29.0",
     "@coral-xyz/anchor-cli": "^0.29.0",
+    "@solana/spl-token": "^0.4.0",
     "@types/assert": "^1.5.10",
     "@types/mocha": "^10.0.6",
     "@types/node": "^18.18.2",
