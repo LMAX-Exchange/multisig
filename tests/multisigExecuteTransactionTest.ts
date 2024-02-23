@@ -17,6 +17,7 @@ describe("Test transaction execution", async () => {
   let program: Program;
   let validatorProcess: ChildProcess;
   let dsl: MultisigDsl;
+
   before(async () => {
     let result = await setUpValidator(false);
     program = result.program;
@@ -24,6 +25,7 @@ describe("Test transaction execution", async () => {
     validatorProcess = result.validatorProcess;
     dsl = new MultisigDsl(program);
   });
+
 
   it("should let proposer execute transaction if multisig approval threshold reached", async () => {
     const ownerA = Keypair.generate();
@@ -77,6 +79,65 @@ describe("Test transaction execution", async () => {
       "confirmed"
     );
     assert.strictEqual(afterBalance, 0);
+  }).timeout(5000);
+
+
+  it("should not execute any instructions if one of the instructions fails", async () => {
+    const ownerA = Keypair.generate();
+    const ownerB = Keypair.generate();
+    const ownerC = Keypair.generate();
+    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const threshold = new BN(2);
+
+    const multisig: MultisigAccount = await dsl.createMultisig(owners, threshold);
+
+    // Fund the multisig signer account
+    await provider.sendAndConfirm(
+      new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: provider.publicKey,
+          lamports: new BN(1_000_000_000),
+          toPubkey: multisig.signer,
+        })
+      )
+    );
+    let instruction1 = SystemProgram.transfer({ // should work
+      fromPubkey: multisig.signer,
+      lamports: new BN(600_000_000),
+      toPubkey: provider.publicKey,
+    });
+    let instruction2 = SystemProgram.transfer({ // should fail, not enough funds
+      fromPubkey: multisig.signer,
+      lamports: new BN(500_000_000),
+      toPubkey: provider.publicKey,
+    });
+    let instruction3 = SystemProgram.transfer({ // would work if instruction2 wasn't present, but won't be executed
+      fromPubkey: multisig.signer,
+      lamports: new BN(100_000_000),
+      toPubkey: provider.publicKey,
+    });
+
+    let beforeBalance = await provider.connection.getBalance(multisig.signer, "confirmed");
+    assert.strictEqual(beforeBalance, 1_000_000_000);
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [instruction1, instruction2, instruction3], multisig.address);
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+
+    try {
+      await dsl.executeTransactionWithMultipleInstructions(transactionAddress,
+        [instruction1, instruction2, instruction3],
+        multisig.signer,
+        multisig.address,
+        ownerA,
+        ownerA.publicKey);
+      fail("Should have failed to execute transaction");
+    } catch (e) {
+      assert.ok(e.logs.includes("Transfer: insufficient lamports 400000000, need 500000000"));
+      assert.strictEqual(e.message, "failed to send transaction: Transaction simulation failed: Error processing Instruction 0: custom program error: 0x1");
+    }
+
+    let afterBalance = await provider.connection.getBalance(multisig.signer, "confirmed");
+    assert.strictEqual(afterBalance, 1_000_000_000);
   }).timeout(5000);
 
 
