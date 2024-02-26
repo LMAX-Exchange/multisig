@@ -11,7 +11,7 @@ import { MultisigAccount, MultisigDsl } from "./utils/multisigDsl";
 import { describe } from "mocha";
 import { fail } from "node:assert";
 
-describe("Test transaction cancelation", async () => {
+describe("Test transaction cancellation", async () => {
   let provider: AnchorProvider;
   let program: Program;
   let dsl: MultisigDsl;
