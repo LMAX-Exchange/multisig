@@ -48,9 +48,19 @@ export class MultisigDsl {
   async proposeTransaction(
     proposer: Keypair,
     instructions: Array<TransactionInstruction>,
-    multisig: PublicKey
+    multisig: PublicKey,
+    transactionAddress?: Keypair
   ) {
-    const transactionAccount = Keypair.generate();
+
+    let transactionAccount: Keypair;
+    if(transactionAddress)
+    {
+        transactionAccount = transactionAddress
+    }
+    else
+    {
+        transactionAccount = Keypair.generate();
+    }
     let smartContractInstructions = instructions.map(ix => {
       return { programId: ix.programId, accounts: ix.keys, data: ix.data };
     });
