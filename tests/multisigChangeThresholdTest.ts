@@ -1,36 +1,25 @@
 import assert = require("assert");
 import {setUpValidator} from "./utils/before";
 import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
-import {Keypair, PublicKey,} from "@solana/web3.js";
+import {PublicKey,} from "@solana/web3.js";
 import {MultisigAccount, MultisigDsl} from "./utils/multisigDsl";
 import {describe} from "mocha";
-import {ChildProcess} from "node:child_process";
 import {fail} from "node:assert";
 
 describe("Test changing multisig threshold", async () => {
   let provider: AnchorProvider;
   let program: Program;
-  let validatorProcess: ChildProcess;
   let dsl: MultisigDsl;
   before(async () => {
     let result = await setUpValidator(false);
     program = result.program;
     provider = result.provider;
-    validatorProcess = result.validatorProcess;
     dsl = new MultisigDsl(program);
   });
 
   it("should change threshold of multisig", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Create instruction to change multisig threshold
     let newThreshold = new BN(3);
@@ -55,7 +44,7 @@ describe("Test changing multisig threshold", async () => {
     );
     assert.deepStrictEqual(
       actualMultisig.owners,
-      owners,
+      multisig.owners.map(owner => owner.publicKey),
       "Should not have updated owners"
     );
     assert.ok(
@@ -65,16 +54,10 @@ describe("Test changing multisig threshold", async () => {
   });
 
   it("should require new threshold to be met", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, ownerC] = multisig.owners;
     const threshold = new BN(2);
 
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
 
     let newThreshold = new BN(3);
     let transactionInstruction = await program.methods
@@ -125,13 +108,9 @@ describe("Test changing multisig threshold", async () => {
   }).timeout(5000);
 
   it("should update threshold for new transactions once executed", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, _ownerC] = multisig.owners;
     const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(owners, threshold);
 
     let actualThreshold = (await program.account.multisig.fetch(multisig.address)).threshold;
     assert.ok(threshold.eq(actualThreshold), "Should have threshold " + threshold);
@@ -164,13 +143,9 @@ describe("Test changing multisig threshold", async () => {
 
 
   it("should use new threshold on an already existing transaction", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, _ownerC] = multisig.owners;
     const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(owners, threshold);
 
     assert.ok(threshold.eq((await program.account.multisig.fetch(multisig.address)).threshold), "Should have updated threshold to " + threshold);
 
@@ -222,16 +197,9 @@ describe("Test changing multisig threshold", async () => {
   }).timeout(5000);
 
   it("should not allow 0 threshold", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, _ownerC] = multisig.owners;
     const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
 
     // Create instruction to change multisig threshold
     let newThreshold = new BN(0);
@@ -265,7 +233,7 @@ describe("Test changing multisig threshold", async () => {
     );
     assert.deepStrictEqual(
       actualMultisig.owners,
-      owners,
+      multisig.owners.map(owner => owner.publicKey),
       "Should not have updated owners"
     );
     assert.ok(
@@ -275,16 +243,9 @@ describe("Test changing multisig threshold", async () => {
   });
 
   it("should not allow threshold greater than number of owners", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, _ownerC] = multisig.owners;
     const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
 
     // Create instruction to change multisig threshold
     let newThreshold = new BN(4);
@@ -318,7 +279,7 @@ describe("Test changing multisig threshold", async () => {
     );
     assert.deepStrictEqual(
       actualMultisig.owners,
-      owners,
+      multisig.owners.map(owner => owner.publicKey),
       "Should not have updated owners"
     );
     assert.ok(
@@ -328,16 +289,8 @@ describe("Test changing multisig threshold", async () => {
   });
 
   it("should not allow threshold to be changed by non multisig signer", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, _ownerB, _ownerC] = multisig.owners;
 
     try {
       // Attempt to change the multisig threshold
@@ -393,16 +346,8 @@ describe("Test changing multisig threshold", async () => {
 
   // Threshold is of type u64, BN(-1) will actually be interpreted as 1
   it("ignores negatives on updated threshold", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Create instruction to change multisig threshold
     let newThreshold = new BN(-1);
@@ -428,7 +373,7 @@ describe("Test changing multisig threshold", async () => {
     );
     assert.deepStrictEqual(
       actualMultisig.owners,
-      owners,
+      multisig.owners.map(owner => owner.publicKey),
       "Should not have updated owners"
     );
     assert.ok(

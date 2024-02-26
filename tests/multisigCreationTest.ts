@@ -21,60 +21,38 @@ describe("Test creation of multisig account", async () => {
   });
 
   it("should create multisig account", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
     const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
     assert.strictEqual(actualMultisig.nonce, multisig.nonce);
-    assert.ok(multisig.threshold.eq(actualMultisig.threshold));
-    assert.deepStrictEqual(actualMultisig.owners, multisig.owners);
+    assert.ok(threshold.eq(actualMultisig.threshold));
+    assert.deepStrictEqual(actualMultisig.owners, multisig.owners.map(owner => owner.publicKey));
     assert.ok(actualMultisig.ownerSetSeqno === 0);
   });
 
   it("should create multiple multisig accounts", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const ownerD = Keypair.generate();
-    const ownerE = Keypair.generate();
-    const ownersMultisig1 = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const ownersMultisig2 = [ownerC.publicKey, ownerD.publicKey, ownerE.publicKey];
-    const threshold = new BN(2);
-
-    const multisig1: MultisigAccount = await dsl.createMultisig(ownersMultisig1, threshold);
-    const multisig2: MultisigAccount = await dsl.createMultisig(ownersMultisig2, threshold);
+    const [ownerA, ownerB, ownerC, ownerD, ownerE] = Array.from({length: 5}, (_, _n) => Keypair.generate());
+    const multisig1: MultisigAccount = await dsl.createMultisigWithOwners(2, [ownerA, ownerB, ownerC]);
+    const multisig2: MultisigAccount = await dsl.createMultisigWithOwners(2, [ownerC, ownerD, ownerE]);
 
     let actualMultisig1 = await program.account.multisig.fetch(multisig1.address);
     let actualMultisig2 = await program.account.multisig.fetch(multisig2.address);
 
     assert.strictEqual(actualMultisig1.nonce, multisig1.nonce);
     assert.ok(multisig1.threshold.eq(actualMultisig1.threshold));
-    assert.deepStrictEqual(actualMultisig1.owners, multisig1.owners);
+    assert.deepStrictEqual(actualMultisig1.owners, multisig1.owners.map(owner => owner.publicKey));
     assert.ok(actualMultisig1.ownerSetSeqno === 0);
 
     assert.strictEqual(actualMultisig2.nonce, multisig2.nonce);
     assert.ok(multisig2.threshold.eq(actualMultisig2.threshold));
-    assert.deepStrictEqual(actualMultisig2.owners, multisig2.owners);
+    assert.deepStrictEqual(actualMultisig2.owners, multisig2.owners.map(owner => owner.publicKey));
     assert.ok(actualMultisig2.ownerSetSeqno === 0);
   });
 
   it("should fail to create if provided threshold is greater than number of owners", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(4);
-
     try {
-      await dsl.createMultisig(owners, threshold);
+      await dsl.createMultisig(4, 3);
       fail("Multisig should not have been created");
     } catch (e: any) {
       assert.ok(
@@ -86,14 +64,8 @@ describe("Test creation of multisig account", async () => {
   });
 
   it("should not create multisig with 0 threshold", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(0);
-
     try {
-      await dsl.createMultisig(owners, threshold);
+      await dsl.createMultisig(0, 3);
       fail("Multisig should not have been created");
     } catch (e: any) {
       assert.ok(
@@ -105,11 +77,8 @@ describe("Test creation of multisig account", async () => {
   });
 
   it("should not create multisig with 0 threshold and no owners", async () => {
-    const owners = [];
-    const threshold = new BN(0);
-
     try {
-      await dsl.createMultisig(owners, threshold);
+      await dsl.createMultisigWithOwners(0, []);
       fail("Multisig should not have been created");
     } catch (e: any) {
       assert.ok(

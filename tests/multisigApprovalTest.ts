@@ -1,41 +1,25 @@
 import assert = require("assert");
-import { setUpValidator } from "./utils/before";
-import { AnchorProvider, BN, Program } from "@coral-xyz/anchor";
-import {
-  Keypair,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-} from "@solana/web3.js";
-import { MultisigAccount, MultisigDsl } from "./utils/multisigDsl";
-import { describe } from "mocha";
-import { ChildProcess } from "node:child_process";
-import { fail } from "node:assert";
+import {setUpValidator} from "./utils/before";
+import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
+import {Keypair, PublicKey, SystemProgram, Transaction,} from "@solana/web3.js";
+import {MultisigAccount, MultisigDsl} from "./utils/multisigDsl";
+import {describe} from "mocha";
+import {fail} from "node:assert";
 
 describe("Test performing signing and execution", async () => {
   let provider: AnchorProvider;
   let program: Program;
-  let validatorProcess: ChildProcess;
   let dsl: MultisigDsl;
   before(async () => {
     let result = await setUpValidator(false);
     program = result.program;
     provider = result.provider;
-    validatorProcess = result.validatorProcess;
     dsl = new MultisigDsl(program);
   });
 
   it("should perform instructions if reached multisig approval threshold", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Fund the multisig signer account
     await provider.sendAndConfirm(
@@ -75,13 +59,8 @@ describe("Test performing signing and execution", async () => {
   });
 
   it("should transfer partial funds", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(owners, threshold);
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Fund the multisig signer account
     await provider.sendAndConfirm(
@@ -118,16 +97,8 @@ describe("Test performing signing and execution", async () => {
   }).timeout(5000);
 
   it("should handle multiple transactions in parallel", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Fund the multisig signer account
     await provider.sendAndConfirm(
@@ -173,16 +144,8 @@ describe("Test performing signing and execution", async () => {
   }).timeout(5000);
 
   it("should not perform instructions if not reached multisig approval threshold", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Fund the multisig signer account
     await provider.sendAndConfirm(
@@ -228,16 +191,8 @@ describe("Test performing signing and execution", async () => {
   });
 
   it("should approve idempotently", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Fund the multisig signer account
     await provider.sendAndConfirm(
@@ -279,16 +234,8 @@ describe("Test performing signing and execution", async () => {
   }).timeout(5000);
 
   it("should not execute transaction if same user has approved multiple times to reach the threshold", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Fund the multisig signer account
     await provider.sendAndConfirm(
@@ -337,16 +284,8 @@ describe("Test performing signing and execution", async () => {
   });
 
   it("should not allow non owner to approve", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, _ownerB, _ownerC] = multisig.owners;
 
     // Fund the multisig signer account
     await provider.sendAndConfirm(
@@ -399,16 +338,9 @@ describe("Test performing signing and execution", async () => {
   });
 
   it("should transfer funds from two different multisig accounts", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const ownerD = Keypair.generate();
-    const owners1 = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const owners2 = [ownerB.publicKey, ownerC.publicKey, ownerD.publicKey];
-    const threshold = new BN(2);
-
-    const multisig1: MultisigAccount = await dsl.createMultisig(owners1, threshold);
-    const multisig2: MultisigAccount = await dsl.createMultisig(owners2, threshold);
+    const [ownerA, ownerB, ownerC, ownerD] = Array.from({length: 4}, (_, _n) => Keypair.generate());
+    const multisig1: MultisigAccount = await dsl.createMultisigWithOwners(2, [ownerA, ownerB, ownerC]);
+    const multisig2: MultisigAccount = await dsl.createMultisigWithOwners(2, [ownerB, ownerC, ownerD]);
 
     // Fund the multisig signer account
     await provider.sendAndConfirm(

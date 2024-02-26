@@ -1,40 +1,25 @@
 import assert = require("assert");
-import { setUpValidator } from "./utils/before";
-import { AnchorProvider, BN, Program } from "@coral-xyz/anchor";
-import {
-  Keypair,
-  PublicKey,
-  SystemProgram,
-} from "@solana/web3.js";
-import { MultisigAccount, MultisigDsl } from "./utils/multisigDsl";
-import { describe } from "mocha";
-import { ChildProcess } from "node:child_process";
-import { fail } from "node:assert";
+import {setUpValidator} from "./utils/before";
+import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
+import {Keypair, PublicKey, SystemProgram,} from "@solana/web3.js";
+import {MultisigAccount, MultisigDsl} from "./utils/multisigDsl";
+import {describe} from "mocha";
+import {fail} from "node:assert";
 
 describe("Test transaction accounts", async () => {
   let provider: AnchorProvider;
   let program: Program;
-  let validatorProcess: ChildProcess;
   let dsl: MultisigDsl;
   before(async () => {
     let result = await setUpValidator(false);
     program = result.program;
     provider = result.provider;
-    validatorProcess = result.validatorProcess;
     dsl = new MultisigDsl(program);
   });
 
   it("should automatically approve transaction with proposer on transaction proposal", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, _ownerB, _ownerC] = multisig.owners;
 
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
@@ -78,16 +63,8 @@ describe("Test transaction accounts", async () => {
   });
 
   it("should update signers list when an owner approves", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, _ownerB, ownerC] = multisig.owners;
 
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
@@ -135,17 +112,8 @@ describe("Test transaction accounts", async () => {
   });
 
   it("should not be able to propose a transaction if user is not an owner", async () => {
-    const ownerA = Keypair.generate();
-    const ownerB = Keypair.generate();
-    const ownerC = Keypair.generate();
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
     const notAnOwner = Keypair.generate();
-    const owners = [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey];
-    const threshold = new BN(2);
-
-    const multisig: MultisigAccount = await dsl.createMultisig(
-      owners,
-      threshold
-    );
 
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({

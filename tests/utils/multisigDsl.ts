@@ -5,7 +5,7 @@ export interface MultisigAccount {
   address: PublicKey;
   signer: PublicKey;
   nonce: number;
-  owners: Array<PublicKey>;
+  owners: Array<Keypair>;
   threshold: BN
 }
 
@@ -16,18 +16,14 @@ export class MultisigDsl {
     this.program = program;
   }
 
-  async createMultisig(
-    owners: Array<PublicKey>,
-    threshold: BN
-  ) {
+  async createMultisigWithOwners(threshold: number, owners: Array<Keypair>) {
     const multisig = Keypair.generate();
-
     const [multisigSigner, nonce] = PublicKey.findProgramAddressSync(
       [multisig.publicKey.toBuffer()],
       this.program.programId
     );
     await this.program.methods
-      .createMultisig(owners, threshold, nonce)
+      .createMultisig(owners.map(owner => owner.publicKey), new BN(threshold), nonce)
       .accounts({
         multisig: multisig.publicKey,
       })
@@ -39,8 +35,14 @@ export class MultisigDsl {
       signer: multisigSigner,
       nonce: nonce,
       owners: owners,
-      threshold: threshold
+      threshold: new BN(threshold)
     };
+
+  }
+
+  async createMultisig(threshold: number, numberOfOwners: number) {
+    const owners: Array<Keypair> = Array.from({length: numberOfOwners}, (_, _n) => Keypair.generate());
+    return await this.createMultisigWithOwners(threshold, owners);
   }
 
   async proposeTransaction(
