@@ -2,7 +2,7 @@ import assert = require("assert");
 import {setUpValidator} from "./utils/before";
 import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
 import {Keypair, PublicKey, SystemProgram,} from "@solana/web3.js";
-import {MultisigAccount, MultisigDsl} from "./utils/multisigDsl";
+import {MultisigDsl} from "./utils/multisigDsl";
 import {describe} from "mocha";
 import {fail} from "node:assert";
 
@@ -18,7 +18,7 @@ describe("Test changing multisig owner", async () => {
   });
 
   it("should change owners of multisig", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     const newOwnerA = Keypair.generate();
@@ -59,7 +59,7 @@ describe("Test changing multisig owner", async () => {
   });
 
   it("should not allow old owners to propose new transaction after ownership change", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     const newOwnerA = Keypair.generate();
@@ -106,7 +106,7 @@ describe("Test changing multisig owner", async () => {
   });
 
   it("should not allow old owners to approve new transaction after ownership change", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     const newOwnerA = Keypair.generate();
@@ -159,7 +159,7 @@ describe("Test changing multisig owner", async () => {
   });
 
   it("should not allow any more approvals on a transaction if owners change", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     const newOwnerA = Keypair.generate();
@@ -226,7 +226,7 @@ describe("Test changing multisig owner", async () => {
   });
 
   it("should not allow transaction execution if owners change", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     const newOwnerA = Keypair.generate();
@@ -290,7 +290,7 @@ describe("Test changing multisig owner", async () => {
   });
 
   it("should not allow owners to be changed by non multisig signer", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, _ownerB, _ownerC] = multisig.owners;
 
     const newOwnerA = Keypair.generate();
@@ -355,7 +355,7 @@ describe("Test changing multisig owner", async () => {
   });
 
   it("should not allow owners to be changed to empty list", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     const newOwners = [];
@@ -386,7 +386,7 @@ describe("Test changing multisig owner", async () => {
   });
 
   it("should update threshold to owners list length if new owners list is smaller than threshold", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     const newOwnerA = Keypair.generate();

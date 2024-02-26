@@ -1,16 +1,11 @@
 import assert = require("assert");
-import { setUpValidator } from "./utils/before";
-import { AnchorProvider, BN, Program } from "@coral-xyz/anchor";
-import {
-  Keypair,
-  PublicKey,
-  SystemProgram, Transaction,
-} from "@solana/web3.js";
-import { MultisigAccount, MultisigDsl } from "./utils/multisigDsl";
-import { describe } from "mocha";
+import {setUpValidator} from "./utils/before";
+import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
+import {Keypair, PublicKey, SystemProgram, Transaction,} from "@solana/web3.js";
+import {MultisigDsl} from "./utils/multisigDsl";
+import {describe} from "mocha";
 
-import { fail } from "node:assert";
-import {transfer} from "@solana/spl-token";
+import {fail} from "node:assert";
 
 describe("Test transaction accounts", async () => {
   let provider: AnchorProvider;
@@ -24,7 +19,7 @@ describe("Test transaction accounts", async () => {
   });
 
   it("should automatically approve transaction with proposer on transaction proposal", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, _ownerB, _ownerC] = multisig.owners;
 
     // Create instruction to send funds from multisig
@@ -69,7 +64,7 @@ describe("Test transaction accounts", async () => {
   });
 
   it("should update signers list when an owner approves", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, _ownerB, ownerC] = multisig.owners;
 
     // Create instruction to send funds from multisig
@@ -118,7 +113,7 @@ describe("Test transaction accounts", async () => {
   });
 
   it("should not be able to propose a transaction if user is not an owner", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const notAnOwner = Keypair.generate();
 
     // Create instruction to send funds from multisig
@@ -142,7 +137,7 @@ describe("Test transaction accounts", async () => {
   });
 
   it("should not be able to edit transaction account with transaction account private key after initialisation", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
 
 
     // Create instruction to send funds from multisig
@@ -195,7 +190,7 @@ describe("Test transaction accounts", async () => {
   });
 
   it("should not be able propose 2 transactions to the same transaction address", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
 
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({

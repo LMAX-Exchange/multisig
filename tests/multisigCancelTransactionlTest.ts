@@ -1,15 +1,10 @@
 import assert = require("assert");
-import { setUpValidator } from "./utils/before";
-import { AnchorProvider, BN, Program } from "@coral-xyz/anchor";
-import {
-  Keypair,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-} from "@solana/web3.js";
-import { MultisigAccount, MultisigDsl } from "./utils/multisigDsl";
-import { describe } from "mocha";
-import { fail } from "node:assert";
+import {setUpValidator} from "./utils/before";
+import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
+import {Keypair, PublicKey, SystemProgram, Transaction,} from "@solana/web3.js";
+import {MultisigDsl} from "./utils/multisigDsl";
+import {describe} from "mocha";
+import {fail} from "node:assert";
 import {SolanaDsl} from "./utils/solanaDsl";
 
 describe("Test transaction cancellation", async () => {
@@ -27,7 +22,7 @@ describe("Test transaction cancellation", async () => {
   });
 
   it("should let owner cancel transaction", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Create instruction to send funds from multisig
@@ -53,7 +48,7 @@ describe("Test transaction cancellation", async () => {
   }).timeout(5000);
 
   it("should not let a non-owner cancel transaction", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, _ownerB, _ownerC] = multisig.owners;
     const ownerD = Keypair.generate();
 
@@ -85,7 +80,7 @@ describe("Test transaction cancellation", async () => {
   }).timeout(5000);
 
   it("should not execute transaction after cancel", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Create instruction to send funds from multisig
@@ -114,7 +109,7 @@ describe("Test transaction cancellation", async () => {
   }).timeout(5000);
 
   it("should not approve transaction after cancel", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Create instruction to send funds from multisig
@@ -141,7 +136,7 @@ describe("Test transaction cancellation", async () => {
   }).timeout(5000);
 
   it("should approve transaction after previous canceled", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
     const recipient = Keypair.generate();
 

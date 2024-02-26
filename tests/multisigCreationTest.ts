@@ -1,27 +1,24 @@
 import assert = require("assert");
-import { setUpValidator } from "./utils/before";
-import { AnchorProvider, BN, Program } from "@coral-xyz/anchor";
-import { Keypair } from "@solana/web3.js";
-import { MultisigAccount, MultisigDsl } from "./utils/multisigDsl";
-import { describe } from "mocha";
-import { ChildProcess } from "node:child_process";
-import { fail } from "node:assert";
+import {setUpValidator} from "./utils/before";
+import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
+import {Keypair} from "@solana/web3.js";
+import {MultisigDsl} from "./utils/multisigDsl";
+import {describe} from "mocha";
+import {fail} from "node:assert";
 
 describe("Test creation of multisig account", async () => {
   let provider: AnchorProvider;
   let program: Program;
-  let validatorProcess: ChildProcess;
   let dsl: MultisigDsl;
   before(async () => {
     let result = await setUpValidator(false);
     program = result.program;
     provider = result.provider;
-    validatorProcess = result.validatorProcess;
     dsl = new MultisigDsl(program);
   });
 
   it("should create multisig account", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const threshold = new BN(2);
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
@@ -33,8 +30,8 @@ describe("Test creation of multisig account", async () => {
 
   it("should create multiple multisig accounts", async () => {
     const [ownerA, ownerB, ownerC, ownerD, ownerE] = Array.from({length: 5}, (_, _n) => Keypair.generate());
-    const multisig1: MultisigAccount = await dsl.createMultisigWithOwners(2, [ownerA, ownerB, ownerC]);
-    const multisig2: MultisigAccount = await dsl.createMultisigWithOwners(2, [ownerC, ownerD, ownerE]);
+    const multisig1 = await dsl.createMultisigWithOwners(2, [ownerA, ownerB, ownerC]);
+    const multisig2 = await dsl.createMultisigWithOwners(2, [ownerC, ownerD, ownerE]);
 
     let actualMultisig1 = await program.account.multisig.fetch(multisig1.address);
     let actualMultisig2 = await program.account.multisig.fetch(multisig2.address);

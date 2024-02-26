@@ -3,7 +3,7 @@ import {setUpValidator} from "./utils/before";
 import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
 import {Keypair, PublicKey, SystemProgram, Transaction} from "@solana/web3.js";
 import {createTransferCheckedInstruction} from "@solana/spl-token";
-import {MultisigAccount, MultisigDsl} from "./utils/multisigDsl";
+import {MultisigDsl} from "./utils/multisigDsl";
 import {describe} from "mocha";
 import {fail} from "node:assert";
 import {SolanaDsl} from "./utils/solanaDsl";
@@ -24,7 +24,7 @@ describe("Test transaction execution", async () => {
 
 
   it("should let proposer execute SOL transaction if multisig approval threshold reached", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Fund the multisig signer account
@@ -60,7 +60,7 @@ describe("Test transaction execution", async () => {
 
 
   it("should let proposer execute a SPL token transaction if multisig approval threshold reached", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Create instruction to send SPL tokens from multisig
@@ -90,7 +90,7 @@ describe("Test transaction execution", async () => {
 
 
   it("should let proposer execute a transaction containing a SOL transfer and a SPL token transfer instruction", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Fund the multisig signer account
@@ -143,7 +143,7 @@ describe("Test transaction execution", async () => {
   }).timeout(5000);
 
   it("should not execute any instructions if one of the instructions fails", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Fund the multisig signer account
@@ -195,7 +195,7 @@ describe("Test transaction execution", async () => {
 
 
   it("should let owner who has approved execute transaction if multisig approval threshold reached", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Fund the multisig signer account
@@ -227,7 +227,7 @@ describe("Test transaction execution", async () => {
 
 
   it("should let owner who has not approved execute transaction if multisig approval threshold reached", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, ownerC] = multisig.owners;
 
     // Fund the multisig signer account
@@ -260,7 +260,7 @@ describe("Test transaction execution", async () => {
 
 
   it("should close transaction account and refund rent exemption SOL on execute transaction", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Fund the multisig signer account
@@ -296,7 +296,7 @@ describe("Test transaction execution", async () => {
   }).timeout(5000);
 
   it("should refund rent exemption SOL to any nominated account", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
     const otherAccount = Keypair.generate();
 
@@ -330,7 +330,7 @@ describe("Test transaction execution", async () => {
   }).timeout(5000);
 
   it("should not clear up transaction account if execute fails", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Fund the multisig signer account
@@ -375,7 +375,7 @@ describe("Test transaction execution", async () => {
   }).timeout(5000);
 
   it("should not execute transaction twice", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Fund the multisig signer account
@@ -420,7 +420,7 @@ describe("Test transaction execution", async () => {
 
 
   it("should not let a non-owner execute transaction", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
     const ownerD = Keypair.generate();
 

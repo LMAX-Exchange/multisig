@@ -2,7 +2,7 @@ import assert = require("assert");
 import {setUpValidator} from "./utils/before";
 import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
 import {PublicKey,} from "@solana/web3.js";
-import {MultisigAccount, MultisigDsl} from "./utils/multisigDsl";
+import {MultisigDsl} from "./utils/multisigDsl";
 import {describe} from "mocha";
 import {fail} from "node:assert";
 
@@ -18,7 +18,7 @@ describe("Test changing multisig threshold", async () => {
   });
 
   it("should change threshold of multisig", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Create instruction to change multisig threshold
@@ -54,7 +54,7 @@ describe("Test changing multisig threshold", async () => {
   });
 
   it("should require new threshold to be met", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, ownerC] = multisig.owners;
     const threshold = new BN(2);
 
@@ -108,7 +108,7 @@ describe("Test changing multisig threshold", async () => {
   }).timeout(5000);
 
   it("should update threshold for new transactions once executed", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
     const threshold = new BN(2);
 
@@ -143,7 +143,7 @@ describe("Test changing multisig threshold", async () => {
 
 
   it("should use new threshold on an already existing transaction", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
     const threshold = new BN(2);
 
@@ -197,7 +197,7 @@ describe("Test changing multisig threshold", async () => {
   }).timeout(5000);
 
   it("should not allow 0 threshold", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
     const threshold = new BN(2);
 
@@ -243,7 +243,7 @@ describe("Test changing multisig threshold", async () => {
   });
 
   it("should not allow threshold greater than number of owners", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
     const threshold = new BN(2);
 
@@ -289,7 +289,7 @@ describe("Test changing multisig threshold", async () => {
   });
 
   it("should not allow threshold to be changed by non multisig signer", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, _ownerB, _ownerC] = multisig.owners;
 
     try {
@@ -346,7 +346,7 @@ describe("Test changing multisig threshold", async () => {
 
   // Threshold is of type u64, BN(-1) will actually be interpreted as 1
   it("ignores negatives on updated threshold", async () => {
-    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
     // Create instruction to change multisig threshold
