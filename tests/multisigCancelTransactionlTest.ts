@@ -10,16 +10,20 @@ import {
 import { MultisigAccount, MultisigDsl } from "./utils/multisigDsl";
 import { describe } from "mocha";
 import { fail } from "node:assert";
+import {SolanaDsl} from "./utils/solanaDsl";
 
 describe("Test transaction cancellation", async () => {
   let provider: AnchorProvider;
   let program: Program;
   let dsl: MultisigDsl;
+  let solanaDsl: SolanaDsl;
+
   before(async () => {
     let result = await setUpValidator(false);
     program = result.program;
     provider = result.provider;
     dsl = new MultisigDsl(program);
+    solanaDsl = new SolanaDsl(provider);
   });
 
   it("should let owner cancel transaction", async () => {
@@ -35,19 +39,11 @@ describe("Test transaction cancellation", async () => {
 
     const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
-    let beforeBalance = await provider.connection.getBalance(
-      ownerA.publicKey,
-      "confirmed"
-    );
-    assert.strictEqual(beforeBalance, 0);
+    await solanaDsl.assertBalance(ownerA.publicKey, 0);
 
     await dsl.cancelTransaction(transactionAddress, multisig.address, ownerB, ownerA.publicKey);
 
-    let afterBalance = await provider.connection.getBalance(
-      ownerA.publicKey,
-      "confirmed"
-    );
-    assert.strictEqual(afterBalance, 2_115_840); // this is the rent exemption amount
+    await solanaDsl.assertBalance(ownerA.publicKey, 2_115_840); // this is the rent exemption amount
 
     let transactionActInfo = await provider.connection.getAccountInfo(
       transactionAddress,
@@ -172,17 +168,10 @@ describe("Test transaction cancellation", async () => {
     await dsl.cancelTransaction(transactionAddress, multisig.address, ownerB, ownerA.publicKey);
 
     const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
-
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress2);
 
     await dsl.executeTransaction(transactionAddress2, transactionInstruction, multisig.signer, multisig.address, ownerA, ownerA.publicKey);
 
-    let afterBalance = await provider.connection.getBalance(
-      recipient.publicKey,
-      "confirmed"
-    );
-    assert.strictEqual(afterBalance, 1_000_000_000);
-
-
+    await solanaDsl.assertBalance(recipient.publicKey, 1_000_000_000);
   }).timeout(5000);
 });
