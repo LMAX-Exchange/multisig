@@ -26,8 +26,8 @@ cache:
 before_deploy:
   - anchor build --verifiable
   - echo "### SHA256 Checksums" > release_notes.md
-  - sha256sum target/deploy/coral_multisig.so > binary.txt
-  - sha256sum target/idl/coral_multisig.json > idl.txt
+  - sha256sum target/deploy/lmax_multisig.so > binary.txt
+  - sha256sum target/idl/lmax_multisig.json > idl.txt
   - cat *.txt >> release_notes.md
   - echo "" >> release_notes.md
   - echo "Built with Anchor [${ANCHOR_VERSION}](https://github.com/coral-xyz/anchor/releases/tag/${ANCHOR_VERSION})." >> release_notes.md
@@ -36,8 +36,8 @@ deploy:
   provider: releases
   edge: true
   file:
-    - "target/deploy/coral_multisig.so"
-    - "target/idl/coral_multisig.json"
+    - "target/deploy/lmax_multisig.so"
+    - "target/idl/lmax_multisig.json"
   release_notes_file: release_notes.md
   skip_cleanup: true
   on:

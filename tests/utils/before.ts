@@ -20,7 +20,7 @@ export interface AnchorConfig {
   };
   programs: {
     localnet: {
-      coral_multisig: string;
+      lmax_multisig: string;
     };
   };
   validator: {
@@ -40,13 +40,13 @@ export const setUpValidator = async (
   const config = readAnchorConfig(PATH_TO_ANCHOR_CONFIG);
   const ledgerDir = await mkdtemp(path.join(os.tmpdir(), "ledger-"));
   const user = loadKeypair(config.provider.wallet);
-  const programAddress = new PublicKey(config.programs.localnet.coral_multisig);
+  const programAddress = new PublicKey(config.programs.localnet.lmax_multisig);
 
   const internalController: AbortController = new AbortController();
   const { signal } = internalController;
 
   let validatorProcess = exec(
-    `solana-test-validator --ledger ${ledgerDir} --mint ${user.publicKey} --bpf-program ${config.programs.localnet.coral_multisig} ${config.path.binary_path}`,
+    `solana-test-validator --ledger ${ledgerDir} --mint ${user.publicKey} --bpf-program ${config.programs.localnet.lmax_multisig} ${config.path.binary_path}`,
     { signal }
   );
 

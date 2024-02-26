@@ -2,13 +2,13 @@
 seeds = true
 
 [programs.mainnet]
-coral_multisig = "msigUdDBsR4zSUYqYEDrc1LcgtmuSDDM7KxpRUXNC6U"
+lmax_multisig = "msigUdDBsR4zSUYqYEDrc1LcgtmuSDDM7KxpRUXNC6U"
 
 [programs.devnet]
-coral_multisig = "msigUdDBsR4zSUYqYEDrc1LcgtmuSDDM7KxpRUXNC6U"
+lmax_multisig = "msigUdDBsR4zSUYqYEDrc1LcgtmuSDDM7KxpRUXNC6U"
 
 [programs.localnet]
-coral_multisig = "msigUdDBsR4zSUYqYEDrc1LcgtmuSDDM7KxpRUXNC6U"
+lmax_multisig = "msigUdDBsR4zSUYqYEDrc1LcgtmuSDDM7KxpRUXNC6U"
 
 [registry]
 url = "https://api.apr.dev"
@@ -22,9 +22,9 @@ wallet_pub = "AeXDXCDe57eZq4ZLtB3RA9Cb5KRYPxYrFnQooay88Vc7"
 test = "npx mocha --require ts-node/register -t 1000000 --exit tests/*Test.ts"
 
 [path]
-idl_path = "./target/idl/coral_multisig.json"
-binary_path = "./target/verifiable/coral_multisig.so"
-key_path = "./target/deploy/coral_multisig-keypair.json"
+idl_path = "./target/idl/lmax_multisig.json"
+binary_path = "./target/verifiable/lmax_multisig.so"
+key_path = "./target/deploy/lmax_multisig-keypair.json"
 
 [validator]
 ledger_dir = "./.anchor/test-ledger"

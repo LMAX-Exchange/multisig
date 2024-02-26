@@ -51,7 +51,7 @@ macro_rules! instructions_len {
 declare_id!("msigUdDBsR4zSUYqYEDrc1LcgtmuSDDM7KxpRUXNC6U");
 
 #[program]
-pub mod coral_multisig {
+pub mod lmax_multisig {
     use super::*;
 
     // Initializes a new multisig account with a set of owners and a threshold.

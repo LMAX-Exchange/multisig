@@ -1,13 +1,13 @@
 [package]
-name = "coral-multisig"
-version = "0.9.0"
+name = "lmax-multisig"
+version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 license = "Apache-2.0"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "coral_multisig"
+name = "lmax_multisig"
 
 [features]
 no-entrypoint = []
