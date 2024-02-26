@@ -1,7 +1,7 @@
 import assert = require("assert");
 import {setUpValidator} from "./utils/before";
 import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
-import {Keypair, PublicKey, SystemProgram, Transaction,} from "@solana/web3.js";
+import {Keypair, PublicKey, SystemProgram, Transaction} from "@solana/web3.js";
 import {
   createAssociatedTokenAccount,
   createMint,
@@ -47,10 +47,11 @@ describe("Test transaction execution", async () => {
     );
 
     // Create instruction to send SOL from multisig
+    const recipient = Keypair.generate().publicKey
     let solTransferInstruction = SystemProgram.transfer({
       fromPubkey: multisig.signer,
       lamports: new BN(600_000_000),
-      toPubkey: provider.publicKey,
+      toPubkey: recipient,
     });
 
     let beforeBalance = await provider.connection.getBalance(multisig.signer, "confirmed");
@@ -63,6 +64,9 @@ describe("Test transaction execution", async () => {
 
     let afterBalance = await provider.connection.getBalance(multisig.signer, "confirmed");
     assert.strictEqual(afterBalance, 400_000_000);
+
+    let recipientBalance = await provider.connection.getBalance(recipient, "confirmed");
+    assert.strictEqual(recipientBalance, 600_000_000);
   }).timeout(5000);
 
 
@@ -95,7 +99,7 @@ describe("Test transaction execution", async () => {
       mintOwner,             // fee payer
       mintAccountPublicKey,  // mint
       multisig.signer,       // owner
-      true  // allowOwnerOffCurve
+      true  // allowOwnerOffCurve - needs to be true because `multisig.signer` is an off-curve PDA
     );
     await mintToChecked(
       provider.connection,
@@ -110,7 +114,7 @@ describe("Test transaction execution", async () => {
       provider.connection,
       mintOwner,             // fee payer
       mintAccountPublicKey,  // mint
-      ownerB.publicKey       // owner
+      Keypair.generate().publicKey       // owner (any valid Solana address)
     );
     let tokenTransferInstruction = createTransferCheckedInstruction(
       multisigOwnedAta.address,  // from (should be a token account)
@@ -131,6 +135,9 @@ describe("Test transaction execution", async () => {
 
     let afterTokenBalance = await provider.connection.getTokenAccountBalance(multisigOwnedAta.address);
     assert.equal(afterTokenBalance.value.amount, 500);
+
+    let recipientTokenBalance = await provider.connection.getTokenAccountBalance(destinationAta);
+    assert.equal(recipientTokenBalance.value.amount, 1500);
   }).timeout(5000);
 
 
@@ -524,7 +531,7 @@ describe("Test transaction execution", async () => {
       lamports: new BN(5_000_000_000),
       toPubkey: provider.publicKey,
     });
-    
+
     const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
     let transactionAccount = await program.account.transaction.fetch(transactionAddress);
 
