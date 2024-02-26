@@ -2,12 +2,20 @@ import * as assert from "assert";
 import {setUpValidator} from "./utils/before";
 import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
 import {Keypair, PublicKey, SystemProgram, Transaction} from "@solana/web3.js";
-import {createTransferCheckedInstruction} from "@solana/spl-token";
-import {MultisigDsl} from "./utils/multisigDsl";
+import {
+  createAssociatedTokenAccount,
+  createInitializeAccountInstruction,
+  createMint,
+  createTransferCheckedInstruction,
+  mintToChecked,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
+import {MultisigAccount, MultisigDsl} from "./utils/multisigDsl";
 import {describe} from "mocha";
 import {fail} from "node:assert";
 import {SolanaDsl} from "./utils/solanaDsl";
 
+const TOKEN_ACCOUNT_SPACE = 165;
 describe("Test transaction execution", async () => {
   let provider: AnchorProvider;
   let program: Program;
@@ -21,7 +29,6 @@ describe("Test transaction execution", async () => {
     dsl = new MultisigDsl(program);
     solanaDsl = new SolanaDsl(provider);
   });
-
 
   it("should let proposer execute SOL transaction if multisig approval threshold reached", async () => {
     const multisig = await dsl.createMultisig(2, 3);
@@ -59,7 +66,7 @@ describe("Test transaction execution", async () => {
   }).timeout(5000);
 
 
-  it("should let proposer execute a SPL token transaction if multisig approval threshold reached", async () => {
+  it("should let proposer execute a SPL token transaction if multisig approval threshold reached using an ata", async () => {
     const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
 
@@ -86,6 +93,96 @@ describe("Test transaction execution", async () => {
 
     await solanaDsl.assertAtaBalance(multisigOwnedAta.address, 500);
     await solanaDsl.assertAtaBalance(destinationAta.address, 1500);
+  }).timeout(5000);
+
+  it("should let proposer execute a SPL token transaction if multisig approval threshold reached using an auxilliary token account", async () => {
+    const multisig: MultisigAccount = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, _ownerC] = multisig.owners;
+
+    // Create instruction to send SPL tokens from multisig
+    const mintOwner = Keypair.generate();
+    await provider.sendAndConfirm(  // mintOwner is also the fee payer, need to give it funds
+        new Transaction().add(
+            SystemProgram.transfer({
+              fromPubkey: provider.publicKey,
+              lamports: new BN(1_000_000_000),
+              toPubkey: mintOwner.publicKey,
+            })
+        )
+    );
+    let mintAccountPublicKey = await createMint(
+        provider.connection,
+        mintOwner,            // signer
+        mintOwner.publicKey,  // mint authority
+        mintOwner.publicKey,  // freeze authority
+        3  // decimals
+    );
+
+    let tokenAccount : Keypair = Keypair.generate();
+    let multisigOwnedTokenAccountInstruction = SystemProgram.createAccount(
+        {
+          fromPubkey: provider.publicKey,
+          newAccountPubkey: tokenAccount.publicKey,
+          lamports: 1_000_000_000,
+          space: TOKEN_ACCOUNT_SPACE, //token account size
+          programId: TOKEN_PROGRAM_ID
+        }
+    );
+
+     let initializeAccountInstruction = createInitializeAccountInstruction(
+        tokenAccount.publicKey,
+        mintAccountPublicKey,  // mint
+        multisig.signer,       // owner
+    );
+
+    let blockhash = await provider.connection.getLatestBlockhash();
+    let transaction = new Transaction({blockhash: blockhash.blockhash, lastValidBlockHeight: blockhash.lastValidBlockHeight, feePayer: provider.publicKey})
+        .add(multisigOwnedTokenAccountInstruction)
+        .add(initializeAccountInstruction);
+
+    transaction.sign(tokenAccount);
+    provider.wallet.signTransaction(transaction);
+
+    await provider.sendAndConfirm(transaction)
+
+    await mintToChecked(
+        provider.connection,
+        mintOwner,                 // fee payer
+        mintAccountPublicKey,      // mint
+        tokenAccount.publicKey,    // receiver (should be a token account)
+        mintOwner.publicKey,       // mint authority
+        2000,           // amount (2 tokens)
+        3               // decimals
+    );
+    let destinationAta = await createAssociatedTokenAccount(
+        provider.connection,
+        mintOwner,                      // fee payer
+        mintAccountPublicKey,           // mint
+        Keypair.generate().publicKey    // owner (any valid Solana address)
+    );
+    let tokenTransferInstruction = createTransferCheckedInstruction(
+        tokenAccount.publicKey,     // from (should be a token account)
+        mintAccountPublicKey,       // mint
+        destinationAta,             // to (should be a token account)
+        multisig.signer,            // from's owner
+        1500,               // amount
+        3                  // decimals
+    );
+
+    let beforeTokenBalance = await provider.connection.getTokenAccountBalance(tokenAccount.publicKey);
+    assert.equal(beforeTokenBalance.value.amount, 2000);
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [tokenTransferInstruction], multisig.address);
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+
+    await dsl.executeTransaction(transactionAddress, tokenTransferInstruction, multisig.signer, multisig.address, ownerA, ownerA.publicKey);
+
+    let afterTokenBalance = await provider.connection.getTokenAccountBalance(tokenAccount.publicKey);
+    assert.equal(afterTokenBalance.value.amount, 500);
+
+    let recipientTokenBalance = await provider.connection.getTokenAccountBalance(destinationAta);
+    assert.equal(recipientTokenBalance.value.amount, 1500);
+
   }).timeout(5000);
 
 
