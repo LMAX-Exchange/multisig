@@ -17,7 +17,7 @@ describe("Test transaction cancellation", async () => {
     let result = await setUpValidator(false);
     program = result.program;
     provider = result.provider;
-    dsl = new MultisigDsl(program);
+    dsl = new MultisigDsl(program, provider);
     solanaDsl = new SolanaDsl(provider);
   });
 
@@ -136,20 +136,9 @@ describe("Test transaction cancellation", async () => {
   }).timeout(5000);
 
   it("should approve transaction after previous canceled", async () => {
-    const multisig = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3, 1_000_000_000);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
     const recipient = Keypair.generate();
-
-    // Fund the multisig signer account
-    await provider.sendAndConfirm(
-      new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: provider.publicKey,
-          lamports: new BN(1_000_000_000),
-          toPubkey: multisig.signer,
-        })
-      )
-    );
 
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({

@@ -1,5 +1,5 @@
-import {Keypair, PublicKey, TransactionInstruction} from "@solana/web3.js";
-import {BN, Program} from "@coral-xyz/anchor";
+import {Keypair, PublicKey, SystemProgram, Transaction, TransactionInstruction} from "@solana/web3.js";
+import {BN, Program, Provider} from "@coral-xyz/anchor";
 
 export interface MultisigAccount {
   address: PublicKey;
@@ -11,12 +11,14 @@ export interface MultisigAccount {
 
 export class MultisigDsl {
   readonly program: Program;
+  readonly provider: Provider;
 
-  constructor(program: Program) {
+  constructor(program: Program, provider?: Provider) {
     this.program = program;
+    this.provider = provider;
   }
 
-  async createMultisigWithOwners(threshold: number, owners: Array<Keypair>): Promise<MultisigAccount> {
+  async createMultisigWithOwners(threshold: number, owners: Array<Keypair>, initialBalance: number = 0): Promise<MultisigAccount> {
     const multisig = Keypair.generate();
     const [multisigSigner, nonce] = PublicKey.findProgramAddressSync(
       [multisig.publicKey.toBuffer()],
@@ -29,6 +31,17 @@ export class MultisigDsl {
       })
       .signers([multisig])
       .rpc();
+    if (initialBalance > 0) {
+      await this.provider.sendAndConfirm(
+        new Transaction().add(
+          SystemProgram.transfer({
+            fromPubkey: this.provider.publicKey,
+            lamports: new BN(initialBalance),
+            toPubkey: multisigSigner,
+          })
+        )
+      );
+    }
 
     return {
       address: multisig.publicKey,
@@ -40,9 +53,9 @@ export class MultisigDsl {
 
   }
 
-  async createMultisig(threshold: number, numberOfOwners: number): Promise<MultisigAccount> {
+  async createMultisig(threshold: number, numberOfOwners: number, initialBalance: number = 0): Promise<MultisigAccount> {
     const owners: Array<Keypair> = Array.from({length: numberOfOwners}, (_, _n) => Keypair.generate());
-    return await this.createMultisigWithOwners(threshold, owners);
+    return await this.createMultisigWithOwners(threshold, owners, initialBalance);
   }
 
   async proposeTransaction(

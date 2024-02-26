@@ -1,7 +1,7 @@
 import assert = require("assert");
 import {setUpValidator} from "./utils/before";
 import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
-import {Keypair, PublicKey, SystemProgram, Transaction,} from "@solana/web3.js";
+import {Keypair, PublicKey, SystemProgram,} from "@solana/web3.js";
 import {MultisigDsl} from "./utils/multisigDsl";
 import {describe} from "mocha";
 import {fail} from "node:assert";
@@ -17,24 +17,13 @@ describe("Test performing signing and execution", async () => {
     let result = await setUpValidator(false);
     program = result.program;
     provider = result.provider;
-    dsl = new MultisigDsl(program);
+    dsl = new MultisigDsl(program, provider);
     solanaDsl = new SolanaDsl(provider);
   });
 
   it("should perform instructions if reached multisig approval threshold", async () => {
-    const multisig = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3, 1_000_000_000);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
-
-    // Fund the multisig signer account
-    await provider.sendAndConfirm(
-      new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: provider.publicKey,
-          lamports: new BN(1_000_000_000),
-          toPubkey: multisig.signer,
-        })
-      )
-    );
 
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
@@ -54,19 +43,8 @@ describe("Test performing signing and execution", async () => {
   });
 
   it("should transfer partial funds", async () => {
-    const multisig = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3, 1_000_000_000);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
-
-    // Fund the multisig signer account
-    await provider.sendAndConfirm(
-        new Transaction().add(
-            SystemProgram.transfer({
-              fromPubkey: provider.publicKey,
-              lamports: new BN(1_000_000_000),
-              toPubkey: multisig.signer,
-            })
-        )
-    );
 
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
@@ -86,19 +64,8 @@ describe("Test performing signing and execution", async () => {
   }).timeout(5000);
 
   it("should handle multiple transactions in parallel", async () => {
-    const multisig = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3, 2_000_000_000);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
-
-    // Fund the multisig signer account
-    await provider.sendAndConfirm(
-      new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: provider.publicKey,
-          lamports: new BN(2_000_000_000),
-          toPubkey: multisig.signer,
-        })
-      )
-    );
 
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
@@ -125,19 +92,8 @@ describe("Test performing signing and execution", async () => {
   }).timeout(5000);
 
   it("should not perform instructions if not reached multisig approval threshold", async () => {
-    const multisig = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3, 1_000_000_000);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
-
-    // Fund the multisig signer account
-    await provider.sendAndConfirm(
-      new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: provider.publicKey,
-          lamports: new BN(1_000_000_000),
-          toPubkey: multisig.signer,
-        })
-      )
-    );
 
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
@@ -164,19 +120,8 @@ describe("Test performing signing and execution", async () => {
   });
 
   it("should approve idempotently", async () => {
-    const multisig = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3, 1_000_000_000);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
-
-    // Fund the multisig signer account
-    await provider.sendAndConfirm(
-      new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: provider.publicKey,
-          lamports: new BN(1_000_000_000),
-          toPubkey: multisig.signer,
-        })
-      )
-    );
 
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
@@ -199,19 +144,8 @@ describe("Test performing signing and execution", async () => {
   }).timeout(5000);
 
   it("should not execute transaction if same user has approved multiple times to reach the threshold", async () => {
-    const multisig = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3, 1_000_000_000);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
-
-    // Fund the multisig signer account
-    await provider.sendAndConfirm(
-      new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: provider.publicKey,
-          lamports: new BN(1_000_000_000),
-          toPubkey: multisig.signer,
-        })
-      )
-    );
 
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
@@ -241,19 +175,8 @@ describe("Test performing signing and execution", async () => {
   });
 
   it("should not allow non owner to approve", async () => {
-    const multisig = await dsl.createMultisig(2, 3);
+    const multisig = await dsl.createMultisig(2, 3, 1_000_000_000);
     const [ownerA, _ownerB, _ownerC] = multisig.owners;
-
-    // Fund the multisig signer account
-    await provider.sendAndConfirm(
-      new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: provider.publicKey,
-          lamports: new BN(1_000_000_000),
-          toPubkey: multisig.signer,
-        })
-      )
-    );
 
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
@@ -288,30 +211,9 @@ describe("Test performing signing and execution", async () => {
 
   it("should transfer funds from two different multisig accounts", async () => {
     const [ownerA, ownerB, ownerC, ownerD] = Array.from({length: 4}, (_, _n) => Keypair.generate());
-    const multisig1 = await dsl.createMultisigWithOwners(2, [ownerA, ownerB, ownerC]);
-    const multisig2 = await dsl.createMultisigWithOwners(2, [ownerB, ownerC, ownerD]);
+    const multisig1 = await dsl.createMultisigWithOwners(2, [ownerA, ownerB, ownerC], 1_000_000_000);
+    const multisig2 = await dsl.createMultisigWithOwners(2, [ownerB, ownerC, ownerD], 500_000_000);
 
-    // Fund the multisig signer account
-    await provider.sendAndConfirm(
-        new Transaction().add(
-            SystemProgram.transfer({
-              fromPubkey: provider.publicKey,
-              lamports: new BN(1_000_000_000),
-              toPubkey: multisig1.signer,
-            })
-        )
-    );
-    await provider.sendAndConfirm(
-        new Transaction().add(
-            SystemProgram.transfer({
-              fromPubkey: provider.publicKey,
-              lamports: new BN(500_000_000),
-              toPubkey: multisig2.signer,
-            })
-        )
-    );
-
-    // Create instruction to send funds from multisig
     let transactionInstruction1 = SystemProgram.transfer({
       fromPubkey: multisig1.signer,
       lamports: new BN(500_000_000),
