@@ -65,15 +65,7 @@ export class MultisigDsl {
     transactionAddress?: Keypair
   ) {
 
-    let transactionAccount: Keypair;
-    if(transactionAddress)
-    {
-        transactionAccount = transactionAddress
-    }
-    else
-    {
-        transactionAccount = Keypair.generate();
-    }
+    let transactionAccount = transactionAddress ? transactionAddress : Keypair.generate();
     let smartContractInstructions = instructions.map(ix => {
       return { programId: ix.programId, accounts: ix.keys, data: ix.data };
     });
@@ -115,11 +107,7 @@ export class MultisigDsl {
     refundee: PublicKey) {
     const accounts = ixs.flatMap(ix =>
       ix.keys
-        .map((meta) =>
-          meta.pubkey.equals(multisigSigner)
-            ? {...meta, isSigner: false}
-            : meta
-        )
+        .map((meta) => meta.pubkey.equals(multisigSigner)? {...meta, isSigner: false} : meta)
         .concat({
           pubkey: ix.programId,
           isWritable: false,
