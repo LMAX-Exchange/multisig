@@ -160,4 +160,78 @@ export class MultisigDsl {
       .signers([executor])
       .rpc();
   }
+
+  async proposeSignAndExecuteTransaction(
+    proposer: Keypair,
+    signers: Array<Keypair>,
+    instructions: Array<TransactionInstruction>,
+    multisigSigner: PublicKey,
+    multisigAddress: PublicKey,
+    executor: Keypair,
+    refundee: PublicKey
+  ) {
+
+    const transactionAccount = Keypair.generate();
+    const smartContractInstructions = instructions.map(ix => {
+      return { programId: ix.programId, accounts: ix.keys, data: ix.data };
+    });
+    const proposeInstruction = await this.program.methods
+      .createTransaction(smartContractInstructions)
+      .accounts({
+        multisig: multisigAddress,
+        transaction: transactionAccount.publicKey,
+        proposer: proposer.publicKey,
+      })
+      .signers([proposer, transactionAccount])
+      .instruction();
+
+    const approveInstructions = await Promise.all(signers.map(async signer =>
+    await this.program.methods
+      .approve()
+      .accounts({
+        multisig: multisigAddress,
+        transaction: transactionAccount.publicKey,
+        owner: signer.publicKey,
+      })
+      .signers([signer])
+      .instruction()
+    ));
+
+    const accounts = instructions.flatMap(ix =>
+      ix.keys
+        .map((meta) => meta.pubkey.equals(multisigSigner)? {...meta, isSigner: false} : meta)
+        .concat({
+          pubkey: ix.programId,
+          isWritable: false,
+          isSigner: false,
+        })
+    );
+    const dedupedAccounts = accounts.filter((value, index) => {
+      const _value = JSON.stringify(value);
+      return index === accounts.findIndex(obj => {
+        return JSON.stringify(obj) === _value;
+      });
+    });
+    const executeInstruction = await this.program.methods
+      .executeTransaction()
+      .accounts({
+        multisig: multisigAddress,
+        multisigSigner,
+        transaction: transactionAccount.publicKey,
+        executor: executor.publicKey,
+        refundee: refundee
+      })
+      .remainingAccounts(dedupedAccounts)
+      .signers([executor])
+      .instruction();
+
+    const blockhash = await this.provider.connection.getLatestBlockhash();
+    const transaction = new Transaction({blockhash: blockhash.blockhash, lastValidBlockHeight: blockhash.lastValidBlockHeight, feePayer: this.provider.publicKey})
+      .add(proposeInstruction)
+      .add(...approveInstructions)
+      .add(executeInstruction);
+    transaction.sign(transactionAccount, proposer, ...signers);
+    console.log("Transaction size " + transaction.serialize({verifySignatures: false}).byteLength);
+    await this.provider.sendAndConfirm(transaction);
+  }
 }

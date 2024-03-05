@@ -14,7 +14,7 @@ describe("Test changing multisig owner", async () => {
     let result = await setUpValidator(false);
     program = result.program;
     provider = result.provider;
-    dsl = new MultisigDsl(program);
+    dsl = new MultisigDsl(program, provider);
   });
 
   it("should change owners of multisig", async () => {
@@ -57,6 +57,26 @@ describe("Test changing multisig owner", async () => {
       "Should have incremented owner set seq number"
     );
   });
+
+  it("should propose, sign and execute changing owners of multisig within one transaction", async () => {
+    const numberOfOwners = 9;
+    const threshold = 4;
+    const multisig = await dsl.createMultisig(threshold, numberOfOwners);
+    const [ownerA, ownerB, ownerC, ownerD, ownerE, ownerF] = multisig.owners;
+
+    const newOwner = Keypair.generate();
+
+    // Create instruction to change multisig owners
+    const transactionInstruction = await program.methods
+      .setOwners([newOwner.publicKey, ...multisig.owners.slice(1).map(owner => owner.publicKey)])
+      .accounts({
+        multisig: multisig.address,
+        multisigSigner: multisig.signer,
+      })
+      .instruction();
+
+    await dsl.proposeSignAndExecuteTransaction(multisig.owners[1], multisig.owners.slice(2, threshold + 1), [transactionInstruction], multisig.signer, multisig.address, multisig.owners[1], multisig.owners[1].publicKey);
+  })
 
   it("should not allow old owners to propose new transaction after ownership change", async () => {
     const multisig = await dsl.createMultisig(2, 3);
