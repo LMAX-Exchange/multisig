@@ -184,9 +184,7 @@ pub mod lmax_multisig {
         ctx.accounts.transaction.did_execute = true;
 
         // reclaim Sol back to payer (and close transaction account)
-        require!(close_transaction(&ctx.accounts.transaction.to_account_info(), &ctx.accounts.refundee).is_ok(), ErrorCode::AccountCloseFailed);
-
-        Ok(())
+        close_transaction(&ctx.accounts.transaction.to_account_info(), &ctx.accounts.refundee).or(Err(error!(ErrorCode::AccountCloseFailed)))
     }
 
     // Cancel the given transaction regardless of signatures.
@@ -194,9 +192,7 @@ pub mod lmax_multisig {
         require!(ctx.accounts.multisig.owners.contains(ctx.accounts.executor.key), ErrorCode::InvalidExecutor);
 
         // reclaim Sol back to payer (and close transaction account)
-        require!(close_transaction(&ctx.accounts.transaction.to_account_info(), &ctx.accounts.refundee).is_ok(), ErrorCode::AccountCloseFailed);
-
-        Ok(())
+        close_transaction(&ctx.accounts.transaction.to_account_info(), &ctx.accounts.refundee).or(Err(error!(ErrorCode::AccountCloseFailed)))
     }
 }
 
@@ -377,7 +373,7 @@ fn execute_change_threshold(multisig: &mut Multisig, threshold: u64) -> Result<(
 fn close_transaction(tx: &AccountInfo, recipient: &AccountInfo) -> Result<()> {
     let mut tx_balance = tx.try_borrow_mut_lamports()?;
     let mut recipient_balance = recipient.try_borrow_mut_lamports()?;
-    **recipient_balance = (**recipient_balance).checked_add(**tx_balance).unwrap();
+    **recipient_balance = (**recipient_balance).checked_add(**tx_balance).ok_or(ErrorCode::AccountCloseFailed)?;
     **tx_balance = 0;
     Ok(())
 }
