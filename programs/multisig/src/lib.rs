@@ -147,25 +147,15 @@ pub mod lmax_multisig {
     // Executes the given transaction if threshold owners have signed it.
     pub fn execute_transaction(ctx: Context<ExecuteTransaction>) -> Result<()> {
         // Has this been executed already?
-        if ctx.accounts.transaction.did_execute {
-            return Err(ErrorCode::AlreadyExecuted.into());
-        }
+        require!(!ctx.accounts.transaction.did_execute, ErrorCode::AlreadyExecuted);
 
-        if !ctx.accounts.multisig.owners.contains(ctx.accounts.executor.key) {
-            return Err(ErrorCode::InvalidExecutor.into());
-        }
+        require!(ctx.accounts.multisig.owners.contains(ctx.accounts.executor.key), ErrorCode::InvalidExecutor);
 
-        // Do we have enough signers.
-        let sig_count = ctx
-            .accounts
-            .transaction
-            .signers
-            .iter()
+        // Do we have enough signers?
+        let sig_count = ctx.accounts.transaction.signers.iter()
             .filter(|&did_sign| *did_sign)
             .count() as u64;
-        if sig_count < ctx.accounts.multisig.threshold {
-            return Err(ErrorCode::NotEnoughSigners.into());
-        }
+        require!(sig_count >= ctx.accounts.multisig.threshold, ErrorCode::NotEnoughSigners);
 
         let multisig_key = ctx.accounts.multisig.key();
         let seeds = &[multisig_key.as_ref(), &[ctx.accounts.multisig.nonce]];
@@ -194,23 +184,17 @@ pub mod lmax_multisig {
         ctx.accounts.transaction.did_execute = true;
 
         // reclaim Sol back to payer (and close transaction account)
-        if close_transaction(&ctx.accounts.transaction.to_account_info(), &ctx.accounts.refundee).is_err() {
-            return Err(ErrorCode::AccountCloseFailed.into());
-        }
+        require!(close_transaction(&ctx.accounts.transaction.to_account_info(), &ctx.accounts.refundee).is_ok(), ErrorCode::AccountCloseFailed);
 
         Ok(())
     }
 
     // Cancel the given transaction regardless of signatures.
     pub fn cancel_transaction(ctx: Context<CancelTransaction>) -> Result<()> {
-        if !ctx.accounts.multisig.owners.contains(ctx.accounts.executor.key) {
-            return Err(ErrorCode::InvalidExecutor.into());
-        }
+        require!(ctx.accounts.multisig.owners.contains(ctx.accounts.executor.key), ErrorCode::InvalidExecutor);
 
         // reclaim Sol back to payer (and close transaction account)
-        if close_transaction(&ctx.accounts.transaction.to_account_info(), &ctx.accounts.refundee).is_err() {
-            return Err(ErrorCode::AccountCloseFailed.into());
-        }
+        require!(close_transaction(&ctx.accounts.transaction.to_account_info(), &ctx.accounts.refundee).is_ok(), ErrorCode::AccountCloseFailed);
 
         Ok(())
     }
@@ -385,10 +369,7 @@ fn execute_set_owners(multisig: &mut Multisig, owners: Vec<Pubkey>) -> Result<()
 }
 
 fn execute_change_threshold(multisig: &mut Multisig, threshold: u64) -> Result<()> {
-    require!(threshold > 0, ErrorCode::InvalidThreshold);
-    if threshold > multisig.owners.len() as u64 {
-        return Err(ErrorCode::InvalidThreshold.into());
-    }
+    require!(threshold > 0 && threshold <= multisig.owners.len() as u64, ErrorCode::InvalidThreshold);
     multisig.threshold = threshold;
     Ok(())
 }
