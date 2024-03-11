@@ -1,6 +1,6 @@
-import assert = require("assert");
+import assert from "assert";
 import {setUpValidator} from "./utils/before";
-import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
+import {AnchorProvider, Program} from "@coral-xyz/anchor";
 import {Keypair} from "@solana/web3.js";
 import {MultisigDsl} from "./utils/multisigDsl";
 import {describe} from "mocha";
@@ -14,7 +14,7 @@ describe("Test creation of multisig account", async () => {
     let result = await setUpValidator(false);
     program = result.program;
     provider = result.provider;
-    dsl = new MultisigDsl(program);
+    dsl = new MultisigDsl(program, provider);
   });
 
   it("should create multisig account", async () => {
@@ -24,7 +24,7 @@ describe("Test creation of multisig account", async () => {
     assert.strictEqual(actualMultisig.nonce, multisig.nonce);
     assert.ok(multisig.threshold.eq(actualMultisig.threshold));
     assert.deepStrictEqual(actualMultisig.owners, multisig.owners.map(owner => owner.publicKey));
-    assert.ok(actualMultisig.ownerSetSeqno === 0);
+    assert.strictEqual(actualMultisig.ownerSetSeqno, 0);
   });
 
   it("should create multiple multisig accounts", async () => {
@@ -38,12 +38,12 @@ describe("Test creation of multisig account", async () => {
     assert.strictEqual(actualMultisig1.nonce, multisig1.nonce);
     assert.ok(multisig1.threshold.eq(actualMultisig1.threshold));
     assert.deepStrictEqual(actualMultisig1.owners, multisig1.owners.map(owner => owner.publicKey));
-    assert.ok(actualMultisig1.ownerSetSeqno === 0);
+    assert.strictEqual(actualMultisig1.ownerSetSeqno, 0);
 
     assert.strictEqual(actualMultisig2.nonce, multisig2.nonce);
     assert.ok(multisig2.threshold.eq(actualMultisig2.threshold));
     assert.deepStrictEqual(actualMultisig2.owners, multisig2.owners.map(owner => owner.publicKey));
-    assert.ok(actualMultisig2.ownerSetSeqno === 0);
+    assert.strictEqual(actualMultisig2.ownerSetSeqno, 0);
   });
 
   it("should fail to create if provided threshold is greater than number of owners", async () => {

@@ -15,7 +15,7 @@ describe("Test transaction accounts", async () => {
     let result = await setUpValidator(false);
     program = result.program;
     provider = result.provider;
-    dsl = new MultisigDsl(program);
+    dsl = new MultisigDsl(program, provider);
   });
 
   it("should automatically approve transaction with proposer on transaction proposal", async () => {

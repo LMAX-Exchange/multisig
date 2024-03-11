@@ -14,7 +14,7 @@ describe("Test changing multisig threshold", async () => {
     let result = await setUpValidator(false);
     program = result.program;
     provider = result.provider;
-    dsl = new MultisigDsl(program);
+    dsl = new MultisigDsl(program, provider);
   });
 
   it("should change threshold of multisig", async () => {

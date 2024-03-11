@@ -1,24 +1,21 @@
 import assert = require("assert");
 import {setUpValidator} from "./utils/before";
 import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
-import {Keypair, PublicKey, SystemProgram, Transaction,} from "@solana/web3.js";
+import {Keypair, PublicKey, SystemProgram,} from "@solana/web3.js";
 import {MultisigDsl} from "./utils/multisigDsl";
 import {describe} from "mocha";
 import {fail} from "node:assert";
-import {SolanaDsl} from "./utils/solanaDsl";
 
 describe("Test transaction cancellation", async () => {
   let provider: AnchorProvider;
   let program: Program;
   let dsl: MultisigDsl;
-  let solanaDsl: SolanaDsl;
 
   before(async () => {
     let result = await setUpValidator(false);
     program = result.program;
     provider = result.provider;
     dsl = new MultisigDsl(program, provider);
-    solanaDsl = new SolanaDsl(provider);
   });
 
   it("should let owner cancel transaction", async () => {
@@ -34,11 +31,11 @@ describe("Test transaction cancellation", async () => {
 
     const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
 
-    await solanaDsl.assertBalance(ownerA.publicKey, 0);
+    await dsl.assertBalance(ownerA.publicKey, 0);
 
     await dsl.cancelTransaction(transactionAddress, multisig.address, ownerB, ownerA.publicKey);
 
-    await solanaDsl.assertBalance(ownerA.publicKey, 2_115_840); // this is the rent exemption amount
+    await dsl.assertBalance(ownerA.publicKey, 2_115_840); // this is the rent exemption amount
 
     let transactionActInfo = await provider.connection.getAccountInfo(
       transactionAddress,
@@ -156,6 +153,6 @@ describe("Test transaction cancellation", async () => {
 
     await dsl.executeTransaction(transactionAddress2, transactionInstruction, multisig.signer, multisig.address, ownerA, ownerA.publicKey);
 
-    await solanaDsl.assertBalance(recipient.publicKey, 1_000_000_000);
+    await dsl.assertBalance(recipient.publicKey, 1_000_000_000);
   }).timeout(5000);
 });

@@ -1,4 +1,4 @@
-import * as assert from "assert";
+import assert from "assert";
 import {setUpValidator} from "./utils/before";
 import {AnchorProvider, BN, Program} from "@coral-xyz/anchor";
 import {Keypair, PublicKey, SystemProgram,} from "@solana/web3.js";
@@ -14,7 +14,7 @@ describe("Test changing multisig owner and threshold atomically", async () => {
     let result = await setUpValidator(false);
     program = result.program;
     provider = result.provider;
-    dsl = new MultisigDsl(program);
+    dsl = new MultisigDsl(program, provider);
   });
 
   it("should change owners of multisig and threshold", async () => {
