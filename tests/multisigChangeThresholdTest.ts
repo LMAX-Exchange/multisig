@@ -38,19 +38,13 @@ describe("Test changing multisig threshold", async () => {
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
     assert.strictEqual(actualMultisig.nonce, multisig.nonce);
-    assert.ok(
-      newThreshold.eq(actualMultisig.threshold),
-      "Should have updated threshold"
-    );
+    assert.ok(newThreshold.eq(actualMultisig.threshold), "Should have updated threshold");
     assert.deepStrictEqual(
       actualMultisig.owners,
       multisig.owners.map(owner => owner.publicKey),
       "Should not have updated owners"
     );
-    assert.ok(
-      actualMultisig.ownerSetSeqno === 0,
-      "Should not have incremented owner set seq number"
-    );
+    assert.equal(actualMultisig.ownerSetSeqno, 0, "Should not have incremented owner set seq number");
   });
 
   it("should require new threshold to be met", async () => {
@@ -58,22 +52,19 @@ describe("Test changing multisig threshold", async () => {
     const [ownerA, ownerB, ownerC] = multisig.owners;
     const threshold = new BN(2);
 
-
-    let newThreshold = new BN(3);
-    let transactionInstruction = await program.methods
-      .changeThreshold(newThreshold)
+    let changeThresholdTo3 = await program.methods
+      .changeThreshold(new BN(3))
       .accounts({
         multisig: multisig.address,
         multisigSigner: multisig.signer,
       })
       .instruction();
 
-    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
-
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [changeThresholdTo3], multisig.address);
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
-    await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
+    await dsl.executeTransaction(transactionAddress, changeThresholdTo3, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
-    let transactionInstruction2 = await program.methods
+    let changeThresholdTo2 = await program.methods
       .changeThreshold(threshold)
       .accounts({
         multisig: multisig.address,
@@ -81,12 +72,12 @@ describe("Test changing multisig threshold", async () => {
       })
       .instruction();
 
-    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction2], multisig.address);
+    const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, [changeThresholdTo2], multisig.address);
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress2);
 
     // Fail when trying to execute with the old threshold
     try {
-      await dsl.executeTransaction(transactionAddress2, transactionInstruction2, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
+      await dsl.executeTransaction(transactionAddress2, changeThresholdTo2, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("Should have failed to execute transaction");
     } catch (e) {
       assert.ok(
@@ -98,13 +89,10 @@ describe("Test changing multisig threshold", async () => {
 
     await dsl.approveTransaction(ownerC, multisig.address, transactionAddress2);
     //Succeed when reaching the new threshold
-    await dsl.executeTransaction(transactionAddress2, transactionInstruction2, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
+    await dsl.executeTransaction(transactionAddress2, changeThresholdTo2, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
-    assert.ok(
-      threshold.eq(actualMultisig.threshold),
-      "Should have updated threshold"
-    );
+    assert.ok(threshold.eq(actualMultisig.threshold), "Should have updated threshold");
   }).timeout(5000);
 
   it("should update threshold for new transactions once executed", async () => {

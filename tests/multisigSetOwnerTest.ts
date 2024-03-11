@@ -20,15 +20,8 @@ describe("Test changing multisig owner", async () => {
   it("should change owners of multisig", async () => {
     const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
-
-    const newOwnerA = Keypair.generate();
-    const newOwnerB = Keypair.generate();
-    const newOwnerC = Keypair.generate();
-    const newOwners = [
-      newOwnerA.publicKey,
-      newOwnerB.publicKey,
-      newOwnerC.publicKey,
-    ];
+    const [newOwnerA, newOwnerB, newOwnerC] = [Keypair.generate(), Keypair.generate(), Keypair.generate()];
+    const newOwners = [newOwnerA.publicKey, newOwnerB.publicKey, newOwnerC.publicKey];
 
     // Create instruction to change multisig owners
     let transactionInstruction = await program.methods
@@ -47,23 +40,14 @@ describe("Test changing multisig owner", async () => {
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
     assert.strictEqual(actualMultisig.nonce, multisig.nonce);
     assert.ok(multisig.threshold.eq(actualMultisig.threshold));
-    assert.deepStrictEqual(
-      actualMultisig.owners,
-      newOwners,
-      "Should have updated to new owners"
-    );
-    assert.ok(
-      actualMultisig.ownerSetSeqno === 1,
-      "Should have incremented owner set seq number"
-    );
+    assert.deepStrictEqual(actualMultisig.owners, newOwners, "Should have updated to new owners");
+    assert.equal(actualMultisig.ownerSetSeqno, 1, "Should have incremented owner set seq number");
   });
 
   it("should propose, sign and execute changing owners of multisig within one transaction", async () => {
     const numberOfOwners = 9;
     const threshold = 4;
     const multisig = await dsl.createMultisig(threshold, numberOfOwners);
-    const [ownerA, ownerB, ownerC, ownerD, ownerE, ownerF] = multisig.owners;
-
     const newOwner = Keypair.generate();
 
     // Create instruction to change multisig owners
@@ -81,19 +65,11 @@ describe("Test changing multisig owner", async () => {
   it("should not allow old owners to propose new transaction after ownership change", async () => {
     const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
-
-    const newOwnerA = Keypair.generate();
-    const newOwnerB = Keypair.generate();
-    const newOwnerC = Keypair.generate();
-    const newOwners = [
-      newOwnerA.publicKey,
-      newOwnerB.publicKey,
-      newOwnerC.publicKey,
-    ];
+    const [newOwnerA, newOwnerB, newOwnerC] = [Keypair.generate(), Keypair.generate(), Keypair.generate()];
 
     // Create instruction to change multisig owners
     let transactionInstruction = await program.methods
-      .setOwners(newOwners)
+      .setOwners([newOwnerA.publicKey, newOwnerB.publicKey, newOwnerC.publicKey])
       .accounts({
         multisig: multisig.address,
         multisigSigner: multisig.signer,
@@ -101,7 +77,6 @@ describe("Test changing multisig owner", async () => {
       .instruction();
 
     const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
-
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
@@ -118,29 +93,18 @@ describe("Test changing multisig owner", async () => {
       fail("Should have failed to propose transaction");
     } catch (e) {
       assert.ok(
-        e.message.includes(
-          "Error Code: InvalidOwner. Error Number: 6000. Error Message: The given owner is not part of this multisig"
-        )
-      );
+        e.message.includes("Error Code: InvalidOwner. Error Number: 6000. Error Message: The given owner is not part of this multisig"));
     }
   });
 
   it("should not allow old owners to approve new transaction after ownership change", async () => {
     const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
-
-    const newOwnerA = Keypair.generate();
-    const newOwnerB = Keypair.generate();
-    const newOwnerC = Keypair.generate();
-    const newOwners = [
-      newOwnerA.publicKey,
-      newOwnerB.publicKey,
-      newOwnerC.publicKey,
-    ];
+    const [newOwnerA, newOwnerB, newOwnerC] = [Keypair.generate(), Keypair.generate(), Keypair.generate()];
 
     // Create instruction to change multisig owners
     let transactionInstruction = await program.methods
-      .setOwners(newOwners)
+      .setOwners([newOwnerA.publicKey, newOwnerB.publicKey, newOwnerC.publicKey])
       .accounts({
         multisig: multisig.address,
         multisigSigner: multisig.signer,
@@ -148,7 +112,6 @@ describe("Test changing multisig owner", async () => {
       .instruction();
 
     const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
-
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
@@ -163,17 +126,11 @@ describe("Test changing multisig owner", async () => {
     const transactionAddress2: PublicKey = await dsl.proposeTransaction(newOwnerA, [transactionInstruction2], multisig.address);
 
     try {
-      await dsl.approveTransaction(
-        ownerB,
-        multisig.address,
-        transactionAddress2
-      );
+      await dsl.approveTransaction(ownerB, multisig.address, transactionAddress2);
       fail("Should have failed to approve transaction");
     } catch (e) {
       assert.ok(
-        e.message.includes(
-          "Error Code: InvalidOwner. Error Number: 6000. Error Message: The given owner is not part of this multisig"
-        )
+        e.message.includes("Error Code: InvalidOwner. Error Number: 6000. Error Message: The given owner is not part of this multisig")
       );
     }
   });
@@ -181,19 +138,11 @@ describe("Test changing multisig owner", async () => {
   it("should not allow any more approvals on a transaction if owners change", async () => {
     const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
-
-    const newOwnerA = Keypair.generate();
-    const newOwnerB = Keypair.generate();
-    const newOwnerC = Keypair.generate();
-    const newOwners = [
-      newOwnerA.publicKey,
-      newOwnerB.publicKey,
-      newOwnerC.publicKey,
-    ];
+    const [newOwnerA, newOwnerB, newOwnerC] = [Keypair.generate(), Keypair.generate(), Keypair.generate()];
 
     // Create instruction to change multisig owners
     let transactionInstruction = await program.methods
-      .setOwners(newOwners)
+      .setOwners([newOwnerA.publicKey, newOwnerB.publicKey, newOwnerC.publicKey])
       .accounts({
         multisig: multisig.address,
         multisigSigner: multisig.signer,
@@ -213,34 +162,18 @@ describe("Test changing multisig owner", async () => {
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
-    let transactionAccount = await program.account.transaction.fetch(
-      transactionAddress2
-    );
+    let transactionAccount = await program.account.transaction.fetch(transactionAddress2);
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
 
-    assert.strictEqual(
-      actualMultisig.ownerSetSeqno,
-      1,
-      "Should have incremented owner set seq number"
-    );
-    assert.strictEqual(
-      transactionAccount.ownerSetSeqno,
-      0,
-      "Owner set sequence number should not have updated"
-    );
+    assert.strictEqual(actualMultisig.ownerSetSeqno, 1, "Should have incremented owner set seq number");
+    assert.strictEqual(transactionAccount.ownerSetSeqno, 0, "Owner set sequence number should not have updated");
 
     try {
-      await dsl.approveTransaction(
-        newOwnerB,
-        multisig.address,
-        transactionAddress2
-      );
+      await dsl.approveTransaction(newOwnerB, multisig.address, transactionAddress2);
       fail("Should have failed to approve transaction");
     } catch (e) {
       assert.ok(
-        e.message.includes(
-          "Error Code: ConstraintRaw. Error Number: 2003. Error Message: A raw constraint was violated."
-        )
+        e.message.includes("Error Code: ConstraintRaw. Error Number: 2003. Error Message: A raw constraint was violated.")
       );
     }
   });
@@ -248,19 +181,11 @@ describe("Test changing multisig owner", async () => {
   it("should not allow transaction execution if owners change", async () => {
     const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
-
-    const newOwnerA = Keypair.generate();
-    const newOwnerB = Keypair.generate();
-    const newOwnerC = Keypair.generate();
-    const newOwners = [
-      newOwnerA.publicKey,
-      newOwnerB.publicKey,
-      newOwnerC.publicKey,
-    ];
+    const [newOwnerA, newOwnerB, newOwnerC] = [Keypair.generate(), Keypair.generate(), Keypair.generate()];
 
     // Create instruction to change multisig owners
     let transactionInstruction = await program.methods
-      .setOwners(newOwners)
+      .setOwners([newOwnerA.publicKey, newOwnerB.publicKey, newOwnerC.publicKey])
       .accounts({
         multisig: multisig.address,
         multisigSigner: multisig.signer,
@@ -276,35 +201,22 @@ describe("Test changing multisig owner", async () => {
     });
 
     const transactionAddress2: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction2], multisig.address);
-
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress2);
     await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
-    let transactionAccount = await program.account.transaction.fetch(
-      transactionAddress2
-    );
+    let transactionAccount = await program.account.transaction.fetch(transactionAddress2);
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
 
-    assert.strictEqual(
-      actualMultisig.ownerSetSeqno,
-      1,
-      "Should have incremented owner set seq number"
-    );
-    assert.strictEqual(
-      transactionAccount.ownerSetSeqno,
-      0,
-      "Owner set sequence number should not have updated"
-    );
+    assert.strictEqual(actualMultisig.ownerSetSeqno, 1, "Should have incremented owner set seq number");
+    assert.strictEqual(transactionAccount.ownerSetSeqno, 0, "Owner set sequence number should not have updated");
 
     try {
       await dsl.executeTransaction(transactionAddress2, transactionInstruction2, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("Should have failed to execute transaction");
     } catch (e) {
       assert.ok(
-        e.message.includes(
-          "Error Code: ConstraintRaw. Error Number: 2003. Error Message: A raw constraint was violated."
-        )
+        e.message.includes("Error Code: ConstraintRaw. Error Number: 2003. Error Message: A raw constraint was violated.")
       );
     }
   });
@@ -312,15 +224,8 @@ describe("Test changing multisig owner", async () => {
   it("should not allow owners to be changed by non multisig signer", async () => {
     const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, _ownerB, _ownerC] = multisig.owners;
-
-    const newOwnerA = Keypair.generate();
-    const newOwnerB = Keypair.generate();
-    const newOwnerC = Keypair.generate();
-    const newOwners = [
-      newOwnerA.publicKey,
-      newOwnerB.publicKey,
-      newOwnerC.publicKey,
-    ];
+    const [newOwnerA, newOwnerB, newOwnerC] = [Keypair.generate(), Keypair.generate(), Keypair.generate()];
+    const newOwners = [newOwnerA.publicKey, newOwnerB.publicKey, newOwnerC.publicKey];
 
     try {
       // Attempt to change the multisig owners
@@ -348,9 +253,7 @@ describe("Test changing multisig owner", async () => {
       fail("Should have failed to execute transaction");
     } catch (e) {
       assert.ok(
-        e.message.includes(
-          "Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated"
-        )
+        e.message.includes("Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated")
       );
     }
 
@@ -367,9 +270,7 @@ describe("Test changing multisig owner", async () => {
       fail("Should have failed to execute transaction");
     } catch (e) {
       assert.ok(
-        e.message.includes(
-          "Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated"
-        )
+        e.message.includes("Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated")
       );
     }
   });
@@ -377,7 +278,6 @@ describe("Test changing multisig owner", async () => {
   it("should not allow owners to be changed to empty list", async () => {
     const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
-
     const newOwners = [];
 
     // Create instruction to change multisig owners
@@ -390,7 +290,6 @@ describe("Test changing multisig owner", async () => {
       .instruction();
 
     const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
-
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
 
     try {
@@ -398,9 +297,7 @@ describe("Test changing multisig owner", async () => {
       fail("Should have not executed transaction");
     } catch (e) {
       assert.ok(
-        e.message.includes(
-          "Error Code: InvalidOwnersLen. Error Number: 6001. Error Message: Owners length must be non zero"
-        )
+        e.message.includes("Error Code: InvalidOwnersLen. Error Number: 6001. Error Message: Owners length must be non zero")
       );
     }
   });
@@ -408,7 +305,6 @@ describe("Test changing multisig owner", async () => {
   it("should update threshold to owners list length if new owners list is smaller than threshold", async () => {
     const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
-
     const newOwnerA = Keypair.generate();
     const newOwners = [newOwnerA.publicKey];
 
@@ -422,24 +318,13 @@ describe("Test changing multisig owner", async () => {
       .instruction();
 
     const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
-
     await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
     await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
     assert.strictEqual(actualMultisig.nonce, multisig.nonce);
-    assert.ok(
-      new BN(1).eq(actualMultisig.threshold),
-      "Should have updated threshold to owners length"
-    );
-    assert.deepStrictEqual(
-      actualMultisig.owners,
-      newOwners,
-      "Should have updated to new owners"
-    );
-    assert.ok(
-      actualMultisig.ownerSetSeqno === 1,
-      "Should have incremented owner set seq number"
-    );
+    assert.ok(new BN(1).eq(actualMultisig.threshold), "Should have updated threshold to owners length");
+    assert.deepStrictEqual(actualMultisig.owners, newOwners, "Should have updated to new owners");
+    assert.strictEqual(actualMultisig.ownerSetSeqno, 1, "Should have incremented owner set seq number");
   });
 });

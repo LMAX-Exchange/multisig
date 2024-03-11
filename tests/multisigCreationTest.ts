@@ -19,11 +19,10 @@ describe("Test creation of multisig account", async () => {
 
   it("should create multisig account", async () => {
     const multisig = await dsl.createMultisig(2, 3);
-    const threshold = new BN(2);
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
     assert.strictEqual(actualMultisig.nonce, multisig.nonce);
-    assert.ok(threshold.eq(actualMultisig.threshold));
+    assert.ok(multisig.threshold.eq(actualMultisig.threshold));
     assert.deepStrictEqual(actualMultisig.owners, multisig.owners.map(owner => owner.publicKey));
     assert.ok(actualMultisig.ownerSetSeqno === 0);
   });
