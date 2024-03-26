@@ -100,7 +100,6 @@ pub mod lmax_multisig {
         tx.instructions = instructions;
         tx.signers = signers;
         tx.multisig = ctx.accounts.multisig.key();
-        tx.did_execute = false;
         tx.owner_set_seqno = ctx.accounts.multisig.owner_set_seqno;
 
         Ok(())
@@ -148,9 +147,6 @@ pub mod lmax_multisig {
 
     // Executes the given transaction if threshold owners have signed it.
     pub fn execute_transaction(ctx: Context<ExecuteTransaction>) -> Result<()> {
-        // Has this been executed already?
-        require!(!ctx.accounts.transaction.did_execute, ErrorCode::AlreadyExecuted);
-
         require!(ctx.accounts.multisig.owners.contains(ctx.accounts.executor.key), ErrorCode::InvalidExecutor);
 
         // Do we have enough signers?
@@ -182,19 +178,13 @@ pub mod lmax_multisig {
             // Collect will process Result objects from the invoke_signed until it finds an error, when it will return that error
             .collect::<std::result::Result<Vec<_>, _>>()?;
 
-        // Burn the transaction to ensure one time use.
-        ctx.accounts.transaction.did_execute = true;
-
-        // reclaim Sol back to payer (and close transaction account)
-        close_transaction(&ctx.accounts.transaction.to_account_info(), &ctx.accounts.refundee).or(Err(error!(ErrorCode::AccountCloseFailed)))
+        Ok(())
     }
 
     // Cancel the given transaction regardless of signatures.
     pub fn cancel_transaction(ctx: Context<CancelTransaction>) -> Result<()> {
         require!(ctx.accounts.multisig.owners.contains(ctx.accounts.executor.key), ErrorCode::InvalidExecutor);
-
-        // reclaim Sol back to payer (and close transaction account)
-        close_transaction(&ctx.accounts.transaction.to_account_info(), &ctx.accounts.refundee).or(Err(error!(ErrorCode::AccountCloseFailed)))
+        Ok(())
     }
 }
 
@@ -264,7 +254,7 @@ pub struct ExecuteTransaction<'info> {
         bump = multisig.nonce,
     )]
     multisig_signer: UncheckedAccount<'info>,
-    #[account(mut, has_one = multisig)]
+    #[account(mut, has_one = multisig, close = refundee)]
     transaction: Box<Account<'info, Transaction>>,
     /// CHECK: success can be any address where rent exempt funds are sent
     #[account(mut)]
@@ -276,7 +266,7 @@ pub struct ExecuteTransaction<'info> {
 pub struct CancelTransaction<'info> {
     #[account(constraint = multisig.owner_set_seqno == transaction.owner_set_seqno)]
     multisig: Box<Account<'info, Multisig>>,
-    #[account(mut, has_one = multisig)]
+    #[account(mut, has_one = multisig, close = refundee)]
     transaction: Box<Account<'info, Transaction>>,
     /// CHECK: success can be any address where rent exempt funds are sent
     #[account(mut)]
@@ -300,8 +290,6 @@ pub struct Transaction {
     pub instructions: Vec<TransactionInstruction>,
     // signers[index] is true iff multisig.owners[index] signed the transaction.
     pub signers: Vec<bool>,
-    // Boolean ensuring one time execution.
-    pub did_execute: bool,
     // Owner set sequence number.
     pub owner_set_seqno: u32,
 }
@@ -372,14 +360,6 @@ fn execute_set_owners(multisig: &mut Multisig, owners: Vec<Pubkey>) -> Result<()
 fn execute_change_threshold(multisig: &mut Multisig, threshold: u64) -> Result<()> {
     require!(threshold > 0 && threshold <= multisig.owners.len() as u64, ErrorCode::InvalidThreshold);
     multisig.threshold = threshold;
-    Ok(())
-}
-
-fn close_transaction(tx: &AccountInfo, recipient: &AccountInfo) -> Result<()> {
-    let mut tx_balance = tx.try_borrow_mut_lamports()?;
-    let mut recipient_balance = recipient.try_borrow_mut_lamports()?;
-    **recipient_balance = (**recipient_balance).checked_add(**tx_balance).ok_or(ErrorCode::AccountCloseFailed)?;
-    **tx_balance = 0;
     Ok(())
 }
 
