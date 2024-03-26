@@ -82,6 +82,8 @@ pub mod lmax_multisig {
         ctx: Context<CreateTransaction>,
         instructions: Vec<TransactionInstruction>,
     ) -> Result<()> {
+        require!(!instructions.is_empty(), ErrorCode::MissingInstructions);
+
         let owner_index = ctx
             .accounts
             .multisig
@@ -407,4 +409,6 @@ pub enum ErrorCode {
     InvalidExecutor,
     #[msg("Failed to close transaction account and refund rent-exemption SOL")]
     AccountCloseFailed,
+    #[msg("The number of instructions must be greater than zero.")]
+    MissingInstructions,
 }

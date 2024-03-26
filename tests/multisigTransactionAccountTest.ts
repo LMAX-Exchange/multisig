@@ -132,6 +132,19 @@ describe("Test transaction accounts", async () => {
     }
   });
 
+  it("should not be able to propose a transaction with empty instructions", async () => {
+    const multisig = await dsl.createMultisig(2, 3);
+    const [ownerA, _ownerB, ownerC] = multisig.owners;
+
+    try {
+      await dsl.proposeTransaction(ownerA, [], multisig.address);
+      fail("Should have failed to propose transaction");
+    } catch (e) {
+      assert.match(e.message,
+        new RegExp(".*Error Code: MissingInstructions. Error Number: 6012. Error Message: The number of instructions must be greater than zero."));
+    }
+  });
+
   it("should not be able to edit transaction account with transaction account private key after initialisation", async () => {
     const multisig = await dsl.createMultisig(2, 3);
 
