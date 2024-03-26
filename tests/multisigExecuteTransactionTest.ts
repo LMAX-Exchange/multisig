@@ -359,11 +359,8 @@ describe("Test transaction execution", async () => {
       await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerA, ownerA.publicKey);
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.ok(
-          e.message.includes(
-              "Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized"
-          )
-      );
+      assert.match(e.message,
+        new RegExp(".*Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized"));
     }
 
   }).timeout(5000);
@@ -389,11 +386,8 @@ describe("Test transaction execution", async () => {
       await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerD, ownerA.publicKey);
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.ok(
-          e.message.includes(
-              "Error Code: InvalidExecutor. Error Number: 6009. Error Message: Executor is not a multisig owner"
-          )
-      );
+      assert.match(e.message,
+        new RegExp(".*Error Code: InvalidExecutor. Error Number: 6009. Error Message: Executor is not a multisig owner"));
     }
 
     await dsl.assertBalance(multisig.signer, 1_000_000_000);

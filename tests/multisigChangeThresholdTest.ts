@@ -80,11 +80,8 @@ describe("Test changing multisig threshold", async () => {
       await dsl.executeTransaction(transactionAddress2, changeThresholdTo2, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.ok(
-        e.message.includes(
-          "Error Code: NotEnoughSigners. Error Number: 6002. Error Message: Not enough owners signed this transaction"
-        )
-      );
+      assert.match(e.message,
+        new RegExp(".*Error Code: NotEnoughSigners. Error Number: 6002. Error Message: Not enough owners signed this transaction"));
     }
 
     await dsl.approveTransaction(ownerC, multisig.address, transactionAddress2);
@@ -206,11 +203,8 @@ describe("Test changing multisig threshold", async () => {
       await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("should have failed to execute transaction");
     } catch (e) {
-      assert.ok(
-        e.message.includes(
-          "Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0"
-        )
-      );
+      assert.match(e.message, 
+          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0."));
     }
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
@@ -252,11 +246,8 @@ describe("Test changing multisig threshold", async () => {
       await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("should have failed to execute transaction");
     } catch (e) {
-      assert.ok(
-        e.message.includes(
-          "Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0"
-        )
-      );
+      assert.match(e.message, 
+          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0."));
     }
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
@@ -291,7 +282,8 @@ describe("Test changing multisig threshold", async () => {
         .rpc();
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.ok(e.message.includes("Signature verification failed"));
+      assert.match(e.message, 
+          new RegExp("Signature verification failed"));
     }
 
     try {
@@ -305,11 +297,8 @@ describe("Test changing multisig threshold", async () => {
         .rpc();
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.ok(
-        e.message.includes(
-          "Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated"
-        )
-      );
+      assert.match(e.message, 
+          new RegExp(".*Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated"));
     }
 
     try {
@@ -324,11 +313,8 @@ describe("Test changing multisig threshold", async () => {
         .rpc();
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.ok(
-        e.message.includes(
-          "Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated"
-        )
-      );
+      assert.match(e.message, 
+          new RegExp(".*Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated"));
     }
   });
 

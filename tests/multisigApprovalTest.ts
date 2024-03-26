@@ -107,11 +107,8 @@ describe("Test performing signing and execution", async () => {
       await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.ok(
-        e.message.includes(
-          "Error Code: NotEnoughSigners. Error Number: 6002. Error Message: Not enough owners signed this transaction"
-        )
-      );
+      assert.match(e.message,
+        new RegExp(".*Error Code: NotEnoughSigners. Error Number: 6002. Error Message: Not enough owners signed this transaction"));
     }
     await dsl.assertBalance(multisig.signer, 1_000_000_000);
   });
@@ -162,11 +159,8 @@ describe("Test performing signing and execution", async () => {
       await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.ok(
-        e.message.includes(
-          "Error Code: NotEnoughSigners. Error Number: 6002. Error Message: Not enough owners signed this transaction"
-        )
-      );
+      assert.match(e.message,
+        new RegExp(".*Error Code: NotEnoughSigners. Error Number: 6002. Error Message: Not enough owners signed this transaction"));
     }
     await dsl.assertBalance(multisig.signer, 1_000_000_000);
   });
@@ -197,11 +191,8 @@ describe("Test performing signing and execution", async () => {
       );
       fail("Should have failed to approve transaction");
     } catch (e) {
-      assert.ok(
-        e.message.includes(
-          "Error Code: InvalidOwner. Error Number: 6000. Error Message: The given owner is not part of this multisig"
-        )
-      );
+      assert.match(e.message,
+        new RegExp(".*Error Code: InvalidOwner. Error Number: 6000. Error Message: The given owner is not part of this multisig"));
     }
     await dsl.assertBalance(multisig.signer, 1_000_000_000);
   });

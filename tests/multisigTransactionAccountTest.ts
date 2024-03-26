@@ -127,12 +127,8 @@ describe("Test transaction accounts", async () => {
       await dsl.proposeTransaction(notAnOwner, [transactionInstruction], multisig.address);
       fail("Should have failed to propose transaction");
     } catch (e) {
-      assert.ok(
-        e.message.includes(
-          "Error Code: InvalidOwner. Error Number: 6000. Error Message: The given owner is not part of this multisig"
-        ),
-        "Did not get expected error message"
-      );
+      assert.match(e.message,
+        new RegExp(".*Error Code: InvalidOwner. Error Number: 6000. Error Message: The given owner is not part of this multisig"));
     }
   });
 
