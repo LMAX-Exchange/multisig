@@ -52,7 +52,7 @@ describe("Test creation of multisig account", async () => {
       fail("Multisig should not have been created");
     } catch (e: any) {
       assert.match(e.message,
-        new RegExp(".*Error Code: InvalidThreshold. Error Number: 6008. Error Message: Threshold must be less than or equal to the number of owners and greater than 0."));
+        new RegExp(".*Error Code: InvalidThreshold. Error Number: 6008. Error Message: Threshold must be less than or equal to the number of owners and greater than zero."));
     }
   });
 
@@ -62,7 +62,7 @@ describe("Test creation of multisig account", async () => {
       fail("Multisig should not have been created");
     } catch (e: any) {
       assert.match(e.message,
-          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6008. Error Message: Threshold must be less than or equal to the number of owners and greater than 0."));
+          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6008. Error Message: Threshold must be less than or equal to the number of owners and greater than zero."));
     }
   });
 
@@ -72,7 +72,18 @@ describe("Test creation of multisig account", async () => {
       fail("Multisig should not have been created");
     } catch (e: any) {
       assert.match(e.message,
-          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6008. Error Message: Threshold must be less than or equal to the number of owners and greater than 0."));
+          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6008. Error Message: Threshold must be less than or equal to the number of owners and greater than zero."));
+    }
+  });
+
+  it("should not create multisig with duplicate owners", async () => {
+    const [ownerA, ownerB] = Array.from({length: 2}, (_, _n) => Keypair.generate());
+    try {
+      await dsl.createMultisigWithOwners(2, [ownerA, ownerA, ownerB]);
+      fail("Multisig should not have been created");
+    } catch (e: any) {
+      assert.match(e.message,
+        new RegExp(".*Error Code: UniqueOwners. Error Number: 6009. Error Message: Owners must be unique."));
     }
   });
 });

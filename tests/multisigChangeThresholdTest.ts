@@ -204,7 +204,7 @@ describe("Test changing multisig threshold", async () => {
       fail("should have failed to execute transaction");
     } catch (e) {
       assert.match(e.message,
-          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6008. Error Message: Threshold must be less than or equal to the number of owners and greater than 0."));
+          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6008. Error Message: Threshold must be less than or equal to the number of owners and greater than zero."));
     }
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
@@ -247,7 +247,7 @@ describe("Test changing multisig threshold", async () => {
       fail("should have failed to execute transaction");
     } catch (e) {
       assert.match(e.message,
-          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6008. Error Message: Threshold must be less than or equal to the number of owners and greater than 0."));
+          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6008. Error Message: Threshold must be less than or equal to the number of owners and greater than zero."));
     }
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);

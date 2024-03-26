@@ -401,13 +401,13 @@ pub enum ErrorCode {
     UnableToDelete,
     #[msg("The given transaction has already been executed.")]
     AlreadyExecuted,
-    #[msg("Threshold must be less than or equal to the number of owners and greater than 0.")]
+    #[msg("Threshold must be less than or equal to the number of owners and greater than zero.")]
     InvalidThreshold,
-    #[msg("Owners must be unique")]
+    #[msg("Owners must be unique.")]
     UniqueOwners,
-    #[msg("Executor is not a multisig owner")]
+    #[msg("Executor is not a multisig owner.")]
     InvalidExecutor,
-    #[msg("Failed to close transaction account and refund rent-exemption SOL")]
+    #[msg("Failed to close transaction account and refund rent-exemption SOL.")]
     AccountCloseFailed,
     #[msg("The number of instructions must be greater than zero.")]
     MissingInstructions,
