@@ -58,7 +58,25 @@ export class MultisigDsl {
       owners: owners,
       threshold: new BN(threshold)
     };
+  }
 
+  async createMultisigWithBadNonce(threshold: number, numberOfOwners: number) {
+    const owners: Array<Keypair> = Array.from({length: numberOfOwners}, (_, _n) => Keypair.generate());
+
+    let multisig;
+    let nonce = 255;
+    while (nonce === 255) {
+      multisig = Keypair.generate();
+      nonce = PublicKey.findProgramAddressSync([multisig.publicKey.toBuffer()], this.program.programId)[1];
+    }
+
+    await this.program.methods
+      .createMultisig(owners.map(owner => owner.publicKey), new BN(threshold), nonce + 1)
+      .accounts({
+        multisig: multisig.publicKey,
+      })
+      .signers([multisig])
+      .rpc();
   }
 
   async createMultisig(threshold: number, numberOfOwners: number, initialBalance: number = 0): Promise<MultisigAccount> {

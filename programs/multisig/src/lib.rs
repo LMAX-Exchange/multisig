@@ -199,6 +199,12 @@ pub struct CreateMultisig<'info> {
         signer
     )]
     multisig: Box<Account<'info, Multisig>>,
+    /// CHECK: multisig_signer is a PDA program signer. Data is never read or written to
+    #[account(
+        seeds = [multisig.key().as_ref()],
+        bump = nonce,
+    )]
+    multisig_signer: UncheckedAccount<'info>,
     #[account(mut)]
     payer: Signer<'info>,
     system_program: Program<'info, System>,

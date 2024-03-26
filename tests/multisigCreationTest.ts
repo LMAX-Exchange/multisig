@@ -86,4 +86,14 @@ describe("Test creation of multisig account", async () => {
         new RegExp(".*Error Code: UniqueOwners. Error Number: 6009. Error Message: Owners must be unique."));
     }
   });
+
+  it("should not create multisig account with bad nonce", async () => {
+    try {
+      await dsl.createMultisigWithBadNonce(2, 3);
+      fail("Multisig should not have been created");
+    } catch (e: any) {
+      assert.match(e.message,
+        new RegExp(".*AnchorError caused by account: multisig_signer. Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated."));
+    }
+  });
 });
