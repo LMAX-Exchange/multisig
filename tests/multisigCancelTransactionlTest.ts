@@ -62,8 +62,8 @@ describe("Test transaction cancellation", async () => {
       await dsl.cancelTransaction(transactionAddress, multisig.address, ownerD, ownerA.publicKey);
       fail("Should have failed to cancel transaction");
     } catch (e) {
-      assert.match(e.message, 
-          new RegExp(".*Error Code: InvalidExecutor. Error Number: 6009. Error Message: Executor is not a multisig owner."));
+      assert.match(e.message,
+          new RegExp(".*Error Code: InvalidExecutor. Error Number: 6010. Error Message: Executor is not a multisig owner."));
     }
 
     let transactionActInfo = await provider.connection.getAccountInfo(
@@ -94,7 +94,7 @@ describe("Test transaction cancellation", async () => {
       await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerA, ownerA.publicKey);
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.match(e.message, 
+      assert.match(e.message,
           new RegExp(".*Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized"));
     }
   }).timeout(5000);
@@ -118,7 +118,7 @@ describe("Test transaction cancellation", async () => {
       await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
       fail("Should have failed to approve transaction");
     } catch (e) {
-      assert.match(e.message, 
+      assert.match(e.message,
           new RegExp(".*Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized"));
     }
   }).timeout(5000);

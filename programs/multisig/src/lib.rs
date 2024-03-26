@@ -66,7 +66,7 @@ pub mod lmax_multisig {
             threshold > 0 && threshold <= owners.len() as u64,
             ErrorCode::InvalidThreshold
         );
-        require!(!owners.is_empty(), ErrorCode::InvalidOwnersLen);
+        require!(!owners.is_empty(), ErrorCode::NotEnoughOwners);
 
         let multisig = &mut ctx.accounts.multisig;
         multisig.owners = owners;
@@ -352,7 +352,10 @@ fn assert_unique_owners(owners: &[Pubkey]) -> Result<()> {
 
 fn execute_set_owners(multisig: &mut Multisig, owners: Vec<Pubkey>) -> Result<()> {
     assert_unique_owners(&owners)?;
-    require!(!owners.is_empty(), ErrorCode::InvalidOwnersLen);
+    require!(!owners.is_empty(), ErrorCode::NotEnoughOwners);
+    // Increasing the number of owners requires reallocation of space in the data account.
+    // This requires a signer to pay the fees for more space, but the instruction will be executed by the multisig.
+    require!(owners.len() <= multisig.owners.len(), ErrorCode::TooManyOwners);
 
     if (owners.len() as u64) < multisig.threshold {
         multisig.threshold = owners.len() as u64;
@@ -383,7 +386,9 @@ pub enum ErrorCode {
     #[msg("The given owner is not part of this multisig.")]
     InvalidOwner,
     #[msg("Owners length must be non zero.")]
-    InvalidOwnersLen,
+    NotEnoughOwners,
+    #[msg("The number of owners cannot be increased.")]
+    TooManyOwners,
     #[msg("Not enough owners signed this transaction.")]
     NotEnoughSigners,
     #[msg("Cannot delete a transaction that has been signed by an owner.")]

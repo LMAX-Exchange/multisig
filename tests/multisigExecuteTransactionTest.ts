@@ -387,7 +387,7 @@ describe("Test transaction execution", async () => {
       fail("Should have failed to execute transaction");
     } catch (e) {
       assert.match(e.message,
-        new RegExp(".*Error Code: InvalidExecutor. Error Number: 6009. Error Message: Executor is not a multisig owner"));
+        new RegExp(".*Error Code: InvalidExecutor. Error Number: 6010. Error Message: Executor is not a multisig owner"));
     }
 
     await dsl.assertBalance(multisig.signer, 1_000_000_000);

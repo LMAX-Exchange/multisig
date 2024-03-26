@@ -52,7 +52,7 @@ describe("Test creation of multisig account", async () => {
       fail("Multisig should not have been created");
     } catch (e: any) {
       assert.match(e.message,
-        new RegExp(".*Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0."));
+        new RegExp(".*Error Code: InvalidThreshold. Error Number: 6008. Error Message: Threshold must be less than or equal to the number of owners and greater than 0."));
     }
   });
 
@@ -61,8 +61,8 @@ describe("Test creation of multisig account", async () => {
       await dsl.createMultisig(0, 3);
       fail("Multisig should not have been created");
     } catch (e: any) {
-      assert.match(e.message, 
-          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0."));
+      assert.match(e.message,
+          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6008. Error Message: Threshold must be less than or equal to the number of owners and greater than 0."));
     }
   });
 
@@ -71,8 +71,8 @@ describe("Test creation of multisig account", async () => {
       await dsl.createMultisigWithOwners(0, []);
       fail("Multisig should not have been created");
     } catch (e: any) {
-      assert.match(e.message, 
-          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0."));
+      assert.match(e.message,
+          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6008. Error Message: Threshold must be less than or equal to the number of owners and greater than 0."));
     }
   });
 });

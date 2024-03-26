@@ -108,7 +108,7 @@ describe("Test performing signing and execution", async () => {
       fail("Should have failed to execute transaction");
     } catch (e) {
       assert.match(e.message,
-        new RegExp(".*Error Code: NotEnoughSigners. Error Number: 6002. Error Message: Not enough owners signed this transaction"));
+        new RegExp(".*Error Code: NotEnoughSigners. Error Number: 6003. Error Message: Not enough owners signed this transaction"));
     }
     await dsl.assertBalance(multisig.signer, 1_000_000_000);
   });
@@ -160,7 +160,7 @@ describe("Test performing signing and execution", async () => {
       fail("Should have failed to execute transaction");
     } catch (e) {
       assert.match(e.message,
-        new RegExp(".*Error Code: NotEnoughSigners. Error Number: 6002. Error Message: Not enough owners signed this transaction"));
+        new RegExp(".*Error Code: NotEnoughSigners. Error Number: 6003. Error Message: Not enough owners signed this transaction"));
     }
     await dsl.assertBalance(multisig.signer, 1_000_000_000);
   });

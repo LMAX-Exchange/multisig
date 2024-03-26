@@ -74,7 +74,7 @@ describe("Test changing multisig owner and threshold atomically", async () => {
       await dsl.proposeTransaction(ownerA, [transactionInstruction2], multisig.address);
       fail("Should have failed to propose transaction");
     } catch (e) {
-      assert.match(e.message, 
+      assert.match(e.message,
           new RegExp(".*Error Code: InvalidOwner. Error Number: 6000. Error Message: The given owner is not part of this multisig"));
     }
   });
@@ -110,7 +110,7 @@ describe("Test changing multisig owner and threshold atomically", async () => {
       await dsl.approveTransaction(ownerB, multisig.address, transactionAddress2);
       fail("Should have failed to approve transaction");
     } catch (e) {
-      assert.match(e.message, 
+      assert.match(e.message,
           new RegExp(".*Error Code: InvalidOwner. Error Number: 6000. Error Message: The given owner is not part of this multisig"));
     }
   });
@@ -151,7 +151,7 @@ describe("Test changing multisig owner and threshold atomically", async () => {
       await dsl.approveTransaction(newOwnerB, multisig.address, transactionAddress2);
       fail("Should have failed to approve transaction");
     } catch (e) {
-      assert.match(e.message, 
+      assert.match(e.message,
           new RegExp(".*Error Code: ConstraintRaw. Error Number: 2003. Error Message: A raw constraint was violated."));
     }
   });
@@ -192,7 +192,7 @@ describe("Test changing multisig owner and threshold atomically", async () => {
       await dsl.executeTransaction(transactionAddress2, transactionInstruction2, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.match(e.message, 
+      assert.match(e.message,
           new RegExp(".*Error Code: ConstraintRaw. Error Number: 2003. Error Message: A raw constraint was violated."));
     }
   });
@@ -213,7 +213,7 @@ describe("Test changing multisig owner and threshold atomically", async () => {
         .rpc();
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.match(e.message, 
+      assert.match(e.message,
           new RegExp("Signature verification failed"));
     }
 
@@ -228,7 +228,7 @@ describe("Test changing multisig owner and threshold atomically", async () => {
         .rpc();
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.match(e.message, 
+      assert.match(e.message,
           new RegExp(".*Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated"));
     }
   });
@@ -253,8 +253,8 @@ describe("Test changing multisig owner and threshold atomically", async () => {
       await dsl.executeTransaction(transactionAddress, changeToEmptyOwners, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("Should have not executed transaction");
     } catch (e) {
-      assert.match(e.message, 
-          new RegExp(".*Error Code: InvalidOwnersLen. Error Number: 6001. Error Message: Owners length must be non zero."));
+      assert.match(e.message,
+          new RegExp(".*Error Code: NotEnoughOwners. Error Number: 6001. Error Message: Owners length must be non zero."));
     }
   });
 
@@ -279,8 +279,8 @@ describe("Test changing multisig owner and threshold atomically", async () => {
       await dsl.executeTransaction(transactionAddress, changeTo2OwnersWithThresholdOf3, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("Should have not executed transaction");
     } catch (e) {
-      assert.match(e.message, 
-          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6007. Error Message: Threshold must be less than or equal to the number of owners and greater than 0."));
+      assert.match(e.message,
+          new RegExp(".*Error Code: InvalidThreshold. Error Number: 6008. Error Message: Threshold must be less than or equal to the number of owners and greater than 0."));
     }
   });
 });

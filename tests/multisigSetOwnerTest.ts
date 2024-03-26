@@ -129,7 +129,7 @@ describe("Test changing multisig owner", async () => {
       await dsl.approveTransaction(ownerB, multisig.address, transactionAddress2);
       fail("Should have failed to approve transaction");
     } catch (e) {
-      assert.match(e.message, 
+      assert.match(e.message,
           new RegExp(".*Error Code: InvalidOwner. Error Number: 6000. Error Message: The given owner is not part of this multisig"));
     }
   });
@@ -171,7 +171,7 @@ describe("Test changing multisig owner", async () => {
       await dsl.approveTransaction(newOwnerB, multisig.address, transactionAddress2);
       fail("Should have failed to approve transaction");
     } catch (e) {
-      assert.match(e.message, 
+      assert.match(e.message,
           new RegExp(".*Error Code: ConstraintRaw. Error Number: 2003. Error Message: A raw constraint was violated."));
     }
   });
@@ -213,7 +213,7 @@ describe("Test changing multisig owner", async () => {
       await dsl.executeTransaction(transactionAddress2, transactionInstruction2, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.match(e.message, 
+      assert.match(e.message,
           new RegExp(".*Error Code: ConstraintRaw. Error Number: 2003. Error Message: A raw constraint was violated."));
     }
   });
@@ -235,7 +235,7 @@ describe("Test changing multisig owner", async () => {
         .rpc();
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.match(e.message, 
+      assert.match(e.message,
           new RegExp("Signature verification failed"));
     }
 
@@ -250,7 +250,7 @@ describe("Test changing multisig owner", async () => {
         .rpc();
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.match(e.message, 
+      assert.match(e.message,
           new RegExp(".*Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated"));
     }
 
@@ -266,7 +266,7 @@ describe("Test changing multisig owner", async () => {
         .rpc();
       fail("Should have failed to execute transaction");
     } catch (e) {
-      assert.match(e.message, 
+      assert.match(e.message,
           new RegExp(".*Error Code: ConstraintSeeds. Error Number: 2006. Error Message: A seeds constraint was violated"));
     }
   });
@@ -292,8 +292,8 @@ describe("Test changing multisig owner", async () => {
       await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
       fail("Should have not executed transaction");
     } catch (e) {
-      assert.match(e.message, 
-          new RegExp(".*Error Code: InvalidOwnersLen. Error Number: 6001. Error Message: Owners length must be non zero."));
+      assert.match(e.message,
+          new RegExp(".*Error Code: NotEnoughOwners. Error Number: 6001. Error Message: Owners length must be non zero."));
     }
   });
 
@@ -321,5 +321,34 @@ describe("Test changing multisig owner", async () => {
     assert.ok(new BN(1).eq(actualMultisig.threshold), "Should have updated threshold to owners length");
     assert.deepStrictEqual(actualMultisig.owners, newOwners, "Should have updated to new owners");
     assert.strictEqual(actualMultisig.ownerSetSeqno, 1, "Should have incremented owner set seq number");
+  });
+
+  it("should not allow increasing number of owners of multisig", async () => {
+    const multisig = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, _ownerC] = multisig.owners;
+    const [newOwnerA, newOwnerB, newOwnerC, newOwnerD] =
+      [Keypair.generate(), Keypair.generate(), Keypair.generate(), Keypair.generate()];
+    const newOwners = [newOwnerA.publicKey, newOwnerB.publicKey, newOwnerC.publicKey, newOwnerD.publicKey];
+
+    // Create instruction to change multisig owners
+    let setOwnersInstruction = await program.methods
+      .setOwners(newOwners)
+      .accounts({
+        multisig: multisig.address,
+        multisigSigner: multisig.signer,
+        payer: provider.publicKey,
+      })
+      .instruction();
+
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [setOwnersInstruction], multisig.address);
+    await dsl.approveTransaction(ownerB, multisig.address, transactionAddress);
+
+    try {
+      await dsl.executeTransaction(transactionAddress, setOwnersInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
+      fail("Should have not executed transaction");
+    } catch (e) {
+      assert.match(e.message,
+          new RegExp(".*Error Code: TooManyOwners. Error Number: 6002. Error Message: The number of owners cannot be increased."));
+    }
   });
 });
