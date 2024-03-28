@@ -48,7 +48,7 @@ macro_rules! instructions_len {
     };
 }
 
-declare_id!("msigUdDBsR4zSUYqYEDrc1LcgtmuSDDM7KxpRUXNC6U");
+declare_id!("LMAXm1DhfBg1YMvi79gXdPfsJpYuJb9urGkGNa12hvJ");
 
 #[program]
 pub mod lmax_multisig {
