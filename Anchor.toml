@@ -2,13 +2,13 @@
 seeds = true
 
 [programs.mainnet]
-lmax_multisig = "msigUdDBsR4zSUYqYEDrc1LcgtmuSDDM7KxpRUXNC6U"
+lmax_multisig = "LMAXm1DhfBg1YMvi79gXdPfsJpYuJb9urGkGNa12hvJ"
 
 [programs.devnet]
-lmax_multisig = "msigUdDBsR4zSUYqYEDrc1LcgtmuSDDM7KxpRUXNC6U"
+lmax_multisig = "LMAXm1DhfBg1YMvi79gXdPfsJpYuJb9urGkGNa12hvJ"
 
 [programs.localnet]
-lmax_multisig = "msigUdDBsR4zSUYqYEDrc1LcgtmuSDDM7KxpRUXNC6U"
+lmax_multisig = "LMAXm1DhfBg1YMvi79gXdPfsJpYuJb9urGkGNa12hvJ"
 
 [registry]
 url = "https://api.apr.dev"
