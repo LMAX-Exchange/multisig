@@ -217,7 +217,7 @@ pub struct CreateTransaction<'info> {
     // see https://book.anchor-lang.com/anchor_references/space.html
     #[account(
         init,
-        space = ANCHOR_ACCT_DESCRIM_SIZE + PUBKEY_SIZE + instructions_len!(instructions) + vec_len!(1, multisig.owners.len()) + 1 + 4,
+        space = ANCHOR_ACCT_DESCRIM_SIZE + PUBKEY_SIZE + instructions_len!(instructions) + vec_len!(1, multisig.owners.len()) + 4,
         payer = payer,
         signer
     )]

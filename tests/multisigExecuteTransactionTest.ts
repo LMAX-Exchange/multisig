@@ -283,7 +283,7 @@ describe("Test transaction execution", async () => {
 
     await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
 
-    await dsl.assertBalance(ownerA.publicKey, 2_115_840);  // this is the rent exemption amount
+    await dsl.assertBalance(ownerA.publicKey, 2_108_880);  // this is the rent exemption amount
 
     let transactionActInfo = await provider.connection.getAccountInfo(transactionAddress, "confirmed");
     assert.strictEqual(transactionActInfo, null);
@@ -308,7 +308,7 @@ describe("Test transaction execution", async () => {
 
     await dsl.executeTransaction(transactionAddress, transactionInstruction, multisig.signer, multisig.address, ownerB, otherAccount.publicKey);
 
-    await dsl.assertBalance(otherAccount.publicKey, 2_115_840);  // this is the rent exemption amount
+    await dsl.assertBalance(otherAccount.publicKey, 2_108_880);  // this is the rent exemption amount
   }).timeout(5000);
 
   it("should not clear up transaction account if execute fails", async () => {

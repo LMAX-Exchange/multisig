@@ -35,7 +35,7 @@ describe("Test transaction cancellation", async () => {
 
     await dsl.cancelTransaction(transactionAddress, multisig.address, ownerB, ownerA.publicKey);
 
-    await dsl.assertBalance(ownerA.publicKey, 2_115_840); // this is the rent exemption amount
+    await dsl.assertBalance(ownerA.publicKey, 2_108_880); // this is the rent exemption amount
 
     let transactionActInfo = await provider.connection.getAccountInfo(
       transactionAddress,
@@ -72,7 +72,7 @@ describe("Test transaction cancellation", async () => {
     // Now cancel the original transaction instruction (the corresponding TX account owner set will be outdated at this point)
     await dsl.assertBalance(ownerB.publicKey, 0);
     await dsl.cancelTransaction(transactionAddress, multisig.address, ownerB, ownerB.publicKey);
-    await dsl.assertBalance(ownerB.publicKey, 2_115_840); // this is the rent exemption amount
+    await dsl.assertBalance(ownerB.publicKey, 2_108_880); // this is the rent exemption amount
 
     let transactionActInfo = await provider.connection.getAccountInfo(
       transactionAddress,
