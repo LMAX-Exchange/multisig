@@ -270,7 +270,7 @@ pub struct ExecuteTransaction<'info> {
 
 #[derive(Accounts)]
 pub struct CancelTransaction<'info> {
-    #[account(constraint = multisig.owner_set_seqno == transaction.owner_set_seqno)]
+    #[account(constraint = multisig.owner_set_seqno >= transaction.owner_set_seqno)]
     multisig: Box<Account<'info, Multisig>>,
     #[account(mut, has_one = multisig, close = refundee)]
     transaction: Box<Account<'info, Transaction>>,

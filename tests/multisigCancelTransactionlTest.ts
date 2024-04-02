@@ -44,6 +44,43 @@ describe("Test transaction cancellation", async () => {
     assert.strictEqual(transactionActInfo, null);
   }).timeout(5000);
 
+  it("should let owner cancel transaction, even if the owner set has changed", async () => {
+    const multisig = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, _ownerC] = multisig.owners;
+
+    // Create instruction to send funds from multisig
+    let transactionInstruction = SystemProgram.transfer({
+      fromPubkey: multisig.signer,
+      lamports: new BN(1_000_000_000),
+      toPubkey: provider.publicKey,
+    });
+    const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
+
+    // Change owner set of the multisig while the TX account at transactionAddress is still pending
+    const newOwners = [ownerA.publicKey, ownerB.publicKey, Keypair.generate().publicKey];
+    let changeOwnersInstruction = await program.methods
+      .setOwners(newOwners)
+      .accounts({
+        multisig: multisig.address,
+        multisigSigner: multisig.signer,
+      })
+      .instruction();
+    const changeOwnersAddress: PublicKey = await dsl.proposeTransaction(ownerA, [changeOwnersInstruction], multisig.address);
+    await dsl.approveTransaction(ownerB, multisig.address, changeOwnersAddress);
+    await dsl.executeTransaction(changeOwnersAddress, changeOwnersInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
+
+    // Now cancel the original transaction instruction (the corresponding TX account owner set will be outdated at this point)
+    await dsl.assertBalance(ownerB.publicKey, 0);
+    await dsl.cancelTransaction(transactionAddress, multisig.address, ownerB, ownerB.publicKey);
+    await dsl.assertBalance(ownerB.publicKey, 2_115_840); // this is the rent exemption amount
+
+    let transactionActInfo = await provider.connection.getAccountInfo(
+      transactionAddress,
+      "confirmed"
+    );
+    assert.strictEqual(transactionActInfo, null);
+  }).timeout(5000);
+
   it("should not let a non-owner cancel transaction", async () => {
     const multisig = await dsl.createMultisig(2, 3);
     const [ownerA, _ownerB, _ownerC] = multisig.owners;
