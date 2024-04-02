@@ -44,6 +44,38 @@ describe("Test changing multisig owner", async () => {
     assert.equal(actualMultisig.ownerSetSeqno, 1, "Should have incremented owner set seq number");
   });
 
+  it("should allow re-expansion of owner list", async () => {
+    const multisig = await dsl.createMultisig(2, 3);
+    const [ownerA, ownerB, ownerC] = multisig.owners;
+
+    // Create and execute instruction to shrink multisig owners
+    let shrinkOwnersInstruction = await program.methods
+      .setOwners([ownerA.publicKey, ownerB.publicKey])
+      .accounts({
+        multisig: multisig.address,
+        multisigSigner: multisig.signer,
+      })
+      .instruction();
+    const shrinkOwnersAddress: PublicKey = await dsl.proposeTransaction(ownerA, [shrinkOwnersInstruction], multisig.address);
+    await dsl.approveTransaction(ownerB, multisig.address, shrinkOwnersAddress);
+    await dsl.executeTransaction(shrinkOwnersAddress, shrinkOwnersInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
+
+    // Create and execute instruction to re-expand multisig owners
+    let expandOwnersInstruction = await program.methods
+      .setOwners([ownerA.publicKey, ownerB.publicKey, ownerC.publicKey])
+      .accounts({
+        multisig: multisig.address,
+        multisigSigner: multisig.signer,
+      })
+      .instruction();
+    const expandOwnersAddress: PublicKey = await dsl.proposeTransaction(ownerA, [expandOwnersInstruction], multisig.address);
+    await dsl.approveTransaction(ownerB, multisig.address, expandOwnersAddress);
+    await dsl.executeTransaction(expandOwnersAddress, expandOwnersInstruction, multisig.signer, multisig.address, ownerB, ownerA.publicKey);
+
+    let actualMultisig = await program.account.multisig.fetch(multisig.address);
+    assert.deepStrictEqual(actualMultisig.owners, [ownerA.publicKey, ownerB.publicKey, ownerC.publicKey], "Should have updated to new owners");
+  });
+
   it("should propose, sign and execute changing owners of multisig within one transaction", async () => {
     const numberOfOwners = 9;
     const threshold = 4;

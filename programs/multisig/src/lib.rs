@@ -31,7 +31,7 @@ const PUBKEY_SIZE: usize = 32;
 macro_rules! vec_len {
     ( $elem_size:expr, $elem_count:expr ) => {
         {
-            $elem_size * $elem_count + VEC_SIZE
+            ($elem_size * $elem_count + VEC_SIZE)
         }
     };
 }
@@ -40,13 +40,33 @@ macro_rules! vec_len {
 macro_rules! instructions_len {
     ( $instructions: expr) => {
         {
-            $instructions.iter().map(|ix| {
+            ($instructions.iter().map(|ix| {
                 PUBKEY_SIZE + vec_len!(PUBKEY_SIZE + 1 + 1, ix.accounts.len()) + vec_len!(1, ix.data.len())
             })
-            .sum::<usize>() + VEC_SIZE
+            .sum::<usize>() + VEC_SIZE)
         }
     };
 }
+
+#[macro_export]
+macro_rules! multisig_data_len {
+    ( $owner_count:expr ) => {
+        {
+            (ANCHOR_ACCT_DESCRIM_SIZE + vec_len!(PUBKEY_SIZE, $owner_count) + 8 + 1 + 4)
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! transaction_data_len {
+    ( $instructions:expr, $owner_count:expr ) => {
+        {
+            (ANCHOR_ACCT_DESCRIM_SIZE + PUBKEY_SIZE + instructions_len!($instructions) + vec_len!(1, $owner_count) + 4)
+        }
+    };
+}
+
+
 
 declare_id!("LMAXm1DhfBg1YMvi79gXdPfsJpYuJb9urGkGNa12hvJ");
 
@@ -194,7 +214,7 @@ pub struct CreateMultisig<'info> {
     // see https://book.anchor-lang.com/anchor_references/space.html
     #[account(
         init,
-        space = ANCHOR_ACCT_DESCRIM_SIZE + vec_len!(PUBKEY_SIZE, owners.len()) + 8 + 1 + 4,
+        space = multisig_data_len!(owners.len()),
         payer = payer,
         signer
     )]
@@ -217,7 +237,7 @@ pub struct CreateTransaction<'info> {
     // see https://book.anchor-lang.com/anchor_references/space.html
     #[account(
         init,
-        space = ANCHOR_ACCT_DESCRIM_SIZE + PUBKEY_SIZE + instructions_len!(instructions) + vec_len!(1, multisig.owners.len()) + 4,
+        space = transaction_data_len!(instructions, multisig.owners.len()),
         payer = payer,
         signer
     )]
@@ -346,12 +366,12 @@ fn assert_unique_owners(owners: &[Pubkey]) -> Result<()> {
     Ok(())
 }
 
-fn execute_set_owners(multisig: &mut Multisig, owners: Vec<Pubkey>) -> Result<()> {
+fn execute_set_owners(multisig: &mut Account<Multisig>, owners: Vec<Pubkey>) -> Result<()> {
     assert_unique_owners(&owners)?;
     require!(!owners.is_empty(), ErrorCode::NotEnoughOwners);
     // Increasing the number of owners requires reallocation of space in the data account.
     // This requires a signer to pay the fees for more space, but the instruction will be executed by the multisig.
-    require!(owners.len() <= multisig.owners.len(), ErrorCode::TooManyOwners);
+    require!(multisig_data_len!(owners.len()) <= multisig.to_account_info().data.borrow().len(), ErrorCode::TooManyOwners);
 
     if (owners.len() as u64) < multisig.threshold {
         multisig.threshold = owners.len() as u64;
