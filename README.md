@@ -62,10 +62,73 @@ anchor build --verifiable
 The `--verifiable` flag should be used before deploying so that your build artifacts can be deterministically generated 
 with docker.
 
-### Test
+### Test against localnet
 
 ```bash
 anchor test
+```
+
+### Test against devnet
+
+- Deploy the smart contract to an address in devnet.
+- Apply the below patch, replacing `<DEPLOY_ADDRESS>` with the base58-encoded address you deployed to.  The patch does the following:
+  - Update the program address in the lib.rs and anchor.toml
+  - Set the provider cluster to 'devnet' in anchor.toml
+  - Set the validator RPC URL in before.ts 
+- Ensure the address in `tests/keypairs/default_wallet.json` has at least 1 SOL available in devnet (can use https://faucet.solana.com/ to top it up).
+- Run the tests via `anchor test --skip-deploy`.
+
+```
+diff --git a/Anchor.toml b/Anchor.toml
+index 505be90..89dbe17 100644
+--- a/Anchor.toml
++++ b/Anchor.toml
+@@ -5,7 +5,7 @@ seeds = true
+lmax_multisig = "LMAXm1DhfBg1YMvi79gXdPfsJpYuJb9urGkGNa12hvJ"
+
+[programs.devnet]
+-lmax_multisig = "LMAXm1DhfBg1YMvi79gXdPfsJpYuJb9urGkGNa12hvJ"
++lmax_multisig = "<DEPLOY_ADDRESS>"
+
+[programs.localnet]
+lmax_multisig = "LMAXm1DhfBg1YMvi79gXdPfsJpYuJb9urGkGNa12hvJ"
+@@ -14,7 +14,7 @@ lmax_multisig = "LMAXm1DhfBg1YMvi79gXdPfsJpYuJb9urGkGNa12hvJ"
+url = "https://api.apr.dev"
+
+[provider]
+-cluster = "localnet"
++cluster = "devnet"
+wallet = "./tests/keypairs/default_wallet.json"
+wallet_pub = "AeXDXCDe57eZq4ZLtB3RA9Cb5KRYPxYrFnQooay88Vc7"
+
+diff --git a/programs/multisig/src/lib.rs b/programs/multisig/src/lib.rs
+index a892760..76a2553 100644
+--- a/programs/multisig/src/lib.rs
++++ b/programs/multisig/src/lib.rs
+@@ -66,9 +66,7 @@ macro_rules! transaction_data_len {
+};
+}
+ 
+-
+-
+-declare_id!("LMAXm1DhfBg1YMvi79gXdPfsJpYuJb9urGkGNa12hvJ");
++declare_id!("<DEPLOY_ADDRESS>");
+
+#[program]
+pub mod lmax_multisig {
+diff --git a/tests/utils/before.ts b/tests/utils/before.ts
+index c9a51d0..5f14127 100644
+--- a/tests/utils/before.ts
++++ b/tests/utils/before.ts
+@@ -44,7 +44,7 @@ export const setUpValidator = async (
+const user = loadKeypair(config.provider.wallet);
+const programAddress = new PublicKey(config.programs[config.provider.cluster].lmax_multisig);
+
+-  const connection = new Connection("http://127.0.0.1:8899", "confirmed");
++  const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+   const provider = new AnchorProvider(connection, new Wallet(user), {});
+
+   if (config.provider.cluster === "localnet") {
 ```
 
 ### Verify
