@@ -38,42 +38,53 @@ export const setUpValidator = async (
 ): Promise<{
   provider: AnchorProvider;
   program: Program;
-  validatorProcess: ChildProcess;
 }> => {
   const config = readAnchorConfig(PATH_TO_ANCHOR_CONFIG);
   const ledgerDir = await mkdtemp(path.join(os.tmpdir(), "ledger-"));
   const user = loadKeypair(config.provider.wallet);
-  const programAddress = new PublicKey(config.programs.localnet.lmax_multisig);
-
-  const internalController: AbortController = new AbortController();
-  const { signal } = internalController;
-
-  let validatorProcess = exec(
-    `solana-test-validator --ledger ${ledgerDir} --mint ${user.publicKey} --bpf-program ${config.programs.localnet.lmax_multisig} ${config.path.binary_path}`,
-    { signal }
-  );
+  const programAddress = new PublicKey(config.programs[config.provider.cluster].lmax_multisig);
 
   const connection = new Connection("http://127.0.0.1:8899", "confirmed");
   const provider = new AnchorProvider(connection, new Wallet(user), {});
 
-  let attempts = 0;
-  while (true) {
-    attempts += 1;
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      let program = await connection.getAccountInfo(programAddress);
-      if (program !== null && program.executable) {
-        break;
+  if (config.provider.cluster === "localnet") {
+    const internalController: AbortController = new AbortController();
+    const {signal} = internalController;
+
+    exec(
+      `solana-test-validator --ledger ${ledgerDir} --mint ${user.publicKey} --bpf-program ${config.programs.localnet.lmax_multisig} ${config.path.binary_path}`,
+      {signal}
+    );
+
+    let attempts = 0;
+    while (true) {
+      attempts += 1;
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        let program = await connection.getAccountInfo(programAddress);
+        if (program !== null && program.executable) {
+          break;
+        }
+      } catch (e) {
+        // Bound the number of retries so the tests don't hang if there's some problem blocking
+        // the connection to the validator.
+        if (attempts == 30) {
+          console.log(
+            `Failed to start validator or connect to running validator. Caught exception: ${e}`
+          );
+          throw e;
+        }
       }
-    } catch (e) {
-      // Bound the number of retries so the tests don't hang if there's some problem blocking
-      // the connection to the validator.
-      if (attempts == 30) {
-        console.log(
-          `Failed to start validator or connect to running validator. Caught exception: ${e}`
-        );
-        throw e;
-      }
+    }
+    if (deployIdl) {
+      console.log("Deploying IDL");
+      shell.exec(
+        `anchor idl init -f ${
+          config.path.idl_path
+        } ${programAddress.toBase58()}  --provider.cluster ${
+          connection.rpcEndpoint
+        }`
+      );
     }
   }
 
@@ -83,18 +94,7 @@ export const setUpValidator = async (
     provider
   );
 
-  if (deployIdl) {
-    console.log("Deploying IDL");
-    shell.exec(
-      `anchor idl init -f ${
-        config.path.idl_path
-      } ${programAddress.toBase58()}  --provider.cluster ${
-        connection.rpcEndpoint
-      }`
-    );
-  }
-
-  return { provider, program, validatorProcess };
+  return { provider, program };
 };
 
 export function readAnchorConfig(pathToAnchorToml: string): AnchorConfig {
