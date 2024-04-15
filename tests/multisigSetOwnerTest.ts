@@ -184,7 +184,7 @@ describe("Test changing multisig owner", async () => {
 
     let transactionInstruction2 = SystemProgram.transfer({
       fromPubkey: multisig.signer,
-      lamports: new BN(1_000_000_000),
+      lamports: new BN(1_000_000),
       toPubkey: provider.publicKey,
     });
 
@@ -226,7 +226,7 @@ describe("Test changing multisig owner", async () => {
 
     let transactionInstruction2 = SystemProgram.transfer({
       fromPubkey: multisig.signer,
-      lamports: new BN(1_000_000_000),
+      lamports: new BN(1_000_000),
       toPubkey: provider.publicKey,
     });
 

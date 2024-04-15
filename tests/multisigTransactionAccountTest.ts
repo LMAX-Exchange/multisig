@@ -25,7 +25,7 @@ describe("Test transaction accounts", async () => {
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
       fromPubkey: multisig.signer,
-      lamports: new BN(1_000_000_000),
+      lamports: new BN(1_000_000),
       toPubkey: provider.publicKey,
     });
 
@@ -70,7 +70,7 @@ describe("Test transaction accounts", async () => {
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
       fromPubkey: multisig.signer,
-      lamports: new BN(1_000_000_000),
+      lamports: new BN(1_000_000),
       toPubkey: provider.publicKey,
     });
 
@@ -119,7 +119,7 @@ describe("Test transaction accounts", async () => {
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
       fromPubkey: multisig.signer,
-      lamports: new BN(1_000_000_000),
+      lamports: new BN(1_000_000),
       toPubkey: provider.publicKey,
     });
 
@@ -152,7 +152,7 @@ describe("Test transaction accounts", async () => {
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
       fromPubkey: multisig.signer,
-      lamports: new BN(1_000_000_000),
+      lamports: new BN(1_000_000),
       toPubkey: provider.publicKey,
     });
 
@@ -161,7 +161,7 @@ describe("Test transaction accounts", async () => {
         new Transaction().add(
             SystemProgram.transfer({
               fromPubkey: provider.publicKey,
-              lamports: new BN(1_000_000_000),
+              lamports: new BN(1_000_000),
               toPubkey: transactionKeypair.publicKey,
             })
         )
@@ -204,7 +204,7 @@ describe("Test transaction accounts", async () => {
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
       fromPubkey: multisig.signer,
-      lamports: new BN(1_000_000_000),
+      lamports: new BN(1_000_000),
       toPubkey: provider.publicKey,
     });
 
@@ -213,7 +213,7 @@ describe("Test transaction accounts", async () => {
         new Transaction().add(
             SystemProgram.transfer({
               fromPubkey: provider.publicKey,
-              lamports: new BN(1_000_000_000),
+              lamports: new BN(1_000_000),
               toPubkey: transactionKeypair.publicKey,
             })
         )

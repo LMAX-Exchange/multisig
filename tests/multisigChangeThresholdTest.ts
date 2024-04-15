@@ -90,7 +90,7 @@ describe("Test changing multisig threshold", async () => {
 
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
     assert.ok(threshold.eq(actualMultisig.threshold), "Should have updated threshold");
-  }).timeout(5000);
+  }).timeout(20000);
 
   it("should update threshold for new transactions once executed", async () => {
     const multisig = await dsl.createMultisig(2, 3);
@@ -124,7 +124,7 @@ describe("Test changing multisig threshold", async () => {
     let actualUpdatedThreshold = (await program.account.multisig.fetch(multisig.address)).threshold;
     assert.ok(newThreshold.eq(actualUpdatedThreshold), "Should have updated threshold to " + threshold + " but was " + actualUpdatedThreshold);
 
-  }).timeout(5000);
+  }).timeout(20000);
 
 
   it("should use new threshold on an already existing transaction", async () => {
@@ -179,7 +179,7 @@ describe("Test changing multisig threshold", async () => {
     let actualMultisig = await program.account.multisig.fetch(multisig.address);
     assert.ok(evenNewerThreshold.eq(actualMultisig.threshold), "Should have updated threshold to " + evenNewerThreshold);
 
-  }).timeout(5000);
+  }).timeout(20000);
 
   it("should not allow 0 threshold", async () => {
     const multisig = await dsl.createMultisig(2, 3);

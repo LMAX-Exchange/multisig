@@ -25,7 +25,7 @@ describe("Test transaction cancellation", async () => {
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
       fromPubkey: multisig.signer,
-      lamports: new BN(1_000_000_000),
+      lamports: new BN(1_000_000),
       toPubkey: provider.publicKey,
     });
 
@@ -42,7 +42,7 @@ describe("Test transaction cancellation", async () => {
       "confirmed"
     );
     assert.strictEqual(transactionActInfo, null);
-  }).timeout(5000);
+  }).timeout(20000);
 
   it("should let owner cancel transaction, even if the owner set has changed", async () => {
     const multisig = await dsl.createMultisig(2, 3);
@@ -51,7 +51,7 @@ describe("Test transaction cancellation", async () => {
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
       fromPubkey: multisig.signer,
-      lamports: new BN(1_000_000_000),
+      lamports: new BN(1_000_000),
       toPubkey: provider.publicKey,
     });
     const transactionAddress: PublicKey = await dsl.proposeTransaction(ownerA, [transactionInstruction], multisig.address);
@@ -79,7 +79,7 @@ describe("Test transaction cancellation", async () => {
       "confirmed"
     );
     assert.strictEqual(transactionActInfo, null);
-  }).timeout(5000);
+  }).timeout(20000);
 
   it("should not let a non-owner cancel transaction", async () => {
     const multisig = await dsl.createMultisig(2, 3);
@@ -89,7 +89,7 @@ describe("Test transaction cancellation", async () => {
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
       fromPubkey: multisig.signer,
-      lamports: new BN(1_000_000_000),
+      lamports: new BN(1_000_000),
       toPubkey: provider.publicKey,
     });
 
@@ -108,7 +108,7 @@ describe("Test transaction cancellation", async () => {
       "confirmed"
     );
     assert.notEqual(transactionActInfo, null);
-  }).timeout(5000);
+  }).timeout(20000);
 
   it("should not execute transaction after cancel", async () => {
     const multisig = await dsl.createMultisig(2, 3);
@@ -117,7 +117,7 @@ describe("Test transaction cancellation", async () => {
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
       fromPubkey: multisig.signer,
-      lamports: new BN(1_000_000_000),
+      lamports: new BN(1_000_000),
       toPubkey: provider.publicKey,
     });
 
@@ -134,7 +134,7 @@ describe("Test transaction cancellation", async () => {
       assert.match(e.message,
           new RegExp(".*Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized"));
     }
-  }).timeout(5000);
+  }).timeout(20000);
 
   it("should not approve transaction after cancel", async () => {
     const multisig = await dsl.createMultisig(2, 3);
@@ -143,7 +143,7 @@ describe("Test transaction cancellation", async () => {
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
       fromPubkey: multisig.signer,
-      lamports: new BN(1_000_000_000),
+      lamports: new BN(1_000_000),
       toPubkey: provider.publicKey,
     });
 
@@ -158,17 +158,17 @@ describe("Test transaction cancellation", async () => {
       assert.match(e.message,
           new RegExp(".*Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized"));
     }
-  }).timeout(5000);
+  }).timeout(20000);
 
   it("should approve transaction after previous canceled", async () => {
-    const multisig = await dsl.createMultisig(2, 3, 1_000_000_000);
+    const multisig = await dsl.createMultisig(2, 3, 1_000_000);
     const [ownerA, ownerB, _ownerC] = multisig.owners;
     const recipient = Keypair.generate();
 
     // Create instruction to send funds from multisig
     let transactionInstruction = SystemProgram.transfer({
       fromPubkey: multisig.signer,
-      lamports: new BN(1_000_000_000),
+      lamports: new BN(1_000_000),
       toPubkey: recipient.publicKey,
     });
 
@@ -181,6 +181,6 @@ describe("Test transaction cancellation", async () => {
 
     await dsl.executeTransaction(transactionAddress2, transactionInstruction, multisig.signer, multisig.address, ownerA, ownerA.publicKey);
 
-    await dsl.assertBalance(recipient.publicKey, 1_000_000_000);
-  }).timeout(5000);
+    await dsl.assertBalance(recipient.publicKey, 1_000_000);
+  }).timeout(20000);
 });

@@ -271,7 +271,7 @@ export class MultisigDsl {
     assert.equal(actualBalance.value.amount, expectedBalance);
   }
 
-  async createTokenMint(decimals: number = 3, initialSolBalance: number = 1_000_000_000): Promise<TokenMint> {
+  async createTokenMint(decimals: number = 3, initialSolBalance: number = 7_000_000): Promise<TokenMint> {
     const mintOwner = Keypair.generate();
     await this.provider.sendAndConfirm(  // mintOwner is also the fee payer, need to give it funds
       new Transaction().add(
