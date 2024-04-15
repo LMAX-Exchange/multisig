@@ -22,6 +22,9 @@ export interface AnchorConfig {
     localnet: {
       lmax_multisig: string;
     };
+    devnet: {
+      lmax_multisig: string;
+    };
   };
   validator: {
     ledger_dir: string;
