@@ -27,6 +27,20 @@ const ANCHOR_ACCT_DESCRIM_SIZE: usize = 8;
 const VEC_SIZE: usize = 4;
 const PUBKEY_SIZE: usize = 32;
 
+#[cfg(not(feature = "no-entrypoint"))]
+use solana_security_txt::security_txt;
+
+#[cfg(not(feature = "no-entrypoint"))]
+security_txt! {
+    name: "LMAX Multisig",
+    project_url: "https://www.lmax.com",
+    contacts: "email:infosec@lmax.com",
+    policy: "https://lmax.com/.well-known/security.txt",
+
+    preferred_languages: "en",
+    auditors: "https://www.certik.com"
+}
+
 #[macro_export]
 macro_rules! vec_len {
     ( $elem_size:expr, $elem_count:expr ) => {
